@@ -51,7 +51,3 @@ spec:
     port: 9411
     targetPort: zipkin
     protocol: TCP
-  selector:
-    app: splunk-otel-collector
-    component: otel-collector
-    release: default

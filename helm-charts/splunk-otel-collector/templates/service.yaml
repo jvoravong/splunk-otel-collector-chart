@@ -32,8 +32,8 @@ spec:
     protocol: {{ $port.protocol }}
   {{- end }}
   {{- end }}
-  selector:
-    app: {{ template "splunk-otel-collector.name" . }}
-    component: otel-collector
-    release: {{ .Release.Name }}
+{{/*  selector:*/}}
+{{/*    app: {{ template "splunk-otel-collector.name" . }}*/}}
+{{/*    component: otel-collector*/}}
+{{/*    release: {{ .Release.Name }}*/}}
 {{- end }}
