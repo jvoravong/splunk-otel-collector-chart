@@ -198,7 +198,8 @@ data:
               type: kube-controller-manager
               useHTTPS: true
               useServiceAccount: true
-            rule: type == "pod" && labels["app"] == "kube-controller-manager" && labels["kube-controller-manager"] == "true"
+            rule: type == "pod" && labels["app"] == "kube-controller-manager" && labels["kube-controller-manager"]
+              == "true"
           smartagent/kubernetes-apiserver:
             config:
               extraDimensions:
@@ -207,7 +208,8 @@ data:
               type: kubernetes-apiserver
               useHTTPS: true
               useServiceAccount: true
-            rule: type == "port" && port == 6443 && pod.labels["app"] == "openshift-kube-apiserver" && pod.labels["apiserver"] == "true"
+            rule: type == "port" && port == 6443 && pod.labels["app"] == "openshift-kube-apiserver"
+              && pod.labels["apiserver"] == "true"
           smartagent/kubernetes-proxy:
             config:
               extraDimensions:
@@ -221,7 +223,8 @@ data:
                 metric_source: kubernetes-scheduler
               port: 10251
               type: kubernetes-scheduler
-            rule: type == "pod" && labels["app"] == "openshift-kube-scheduler" && labels["scheduler"] == "true"
+            rule: type == "pod" && labels["app"] == "openshift-kube-scheduler" && labels["scheduler"]
+              == "true"
         watch_observers:
         - k8s_observer
       signalfx:
