@@ -1,0 +1,26 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: instrumentation-java
+spec:
+  exporter:
+    endpoint: http://$(SPLUNK_OTEL_AGENT):4317
+  propagators:
+    - tracecontext
+    - baggage
+    - b3
+  java:
+    env:
+      - name: SPLUNK_OTEL_AGENT
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: status.hostIP
+      - name: OTEL_SERVICE_NAME
+        value: ubuntu
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(SPLUNK_OTEL_AGENT):4317
+      - name: OTEL_TRACES_EXPORTER
+        value: otlp
+      - name: OTEL_RESOURCE_ATTRIBUTES
+        value: k8s.container.name=ubuntu,k8s.namespace.name=config-injection-test-ns,k8s.pod.name=ubuntu

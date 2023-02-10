@@ -1331,3 +1331,26 @@ networkExplorer:
       # seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
       # seccomp.security.alpha.kubernetes.io/defaultProfileName: 'docker/default'
       # apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
+
+#opentelemetry-demo:
+
+opentelemetry-operator:
+  # Default values for opentelemetry-operator.
+  # This is a YAML-formatted file.
+  # Declare variables to be passed into your templates.
+
+  replicaCount: 1
+
+  ## Provide a name in place of opentelemetry-operator.
+  ##
+  nameOverride: ""
+
+  ## Reference one or more secrets to be used when pulling images from authenticated repositories.
+  imagePullSecrets: [ ]
+
+  ## Provide OpenTelemetry Operator manager container image and resources.
+  ##
+  manager:
+    image:
+      repository: ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator
+      tag: v0.69.0

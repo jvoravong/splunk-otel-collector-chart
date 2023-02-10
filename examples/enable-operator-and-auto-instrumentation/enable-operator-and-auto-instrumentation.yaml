@@ -1,0 +1,18 @@
+splunkObservability:
+  metricsEnabled: true
+  tracesEnabled: true
+  logsEnabled: true
+  accessToken: CHANGEME
+  realm: us0
+clusterName: CHANGEME
+environment: CHANGEME
+metricsEnabled: true
+logsEnabled: false
+tracesEnabled: true
+
+opentelemetry-operator:
+  manager:
+    autoInstrumentationImage:
+      java:
+        repository: jvsplk/splunk-otel-java
+        tag: latest

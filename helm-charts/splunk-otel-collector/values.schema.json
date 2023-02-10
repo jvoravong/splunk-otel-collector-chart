@@ -1444,6 +1444,11 @@
           }
         }
       }
+    },
+    "opentelemetry-operator": {
+      "description": "Splunk Network Explorer Configuration",
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "allOf": [
