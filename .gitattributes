@@ -1,0 +1,5 @@
+# https://github.com/github/linguist/blob/master/docs/overrides.md#using-gitattributes
+# https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github
+examples/rendered_manifests/** linguist-generated=true
+# TODO: remove this line
+examples/*/rendered_manifests/** linguist-generated=true
