@@ -1331,3 +1331,21 @@ networkExplorer:
       # seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
       # seccomp.security.alpha.kubernetes.io/defaultProfileName: 'docker/default'
       # apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
+
+################################################################################
+# Open-telemetry operator running as a deployment with a replica count of 1.
+# It auto-instruments applications to send telemetry data to the Splunk backend.
+# The operator is imported as a subchart into this chart. For a full list of
+# values, see:
+# https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-operator/values.yaml
+################################################################################
+
+operator:
+  enabled: false
+
+  manager:
+    autoInstrumentationImage:
+      java:
+        # TODO: Update this after OTL-1312 Add support for Java auto-instrumentation
+        repository: jvsplk/splunk-otel-java
+        tag: 1.0.2
