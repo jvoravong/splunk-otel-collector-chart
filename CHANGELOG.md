@@ -6,24 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Add functional test coverage for Network Explorer metrics ([#684](https://github.com/signalfx/splunk-otel-collector-chart/pull/684)
+- Update Kubernetes to 1.26 in our functional tests ([#678](https://github.com/signalfx/splunk-otel-collector-chart/pull/678)
+- Added examples for supported Kubernetes distributions and Kubernetes clusters with windows nodes ([#663](https://github.com/signalfx/splunk-otel-collector-chart/pull/663)
+- Refactored the examples and rendered directories into one for better usability ([#658](https://github.com/signalfx/splunk-otel-collector-chart/pull/658)
 
-## [0.71.0] - 2023-03-01
-
-### Added
-
-- Added examples for supported Kubernetes distributions and Kubernetes clusters with windows nodes ([#663](https://github.com/signalfx/splunk-otel-collector-chart/pull/663))
-- Refactored the examples and rendered directories into one for better usability ([#658](https://github.com/signalfx/splunk-otel-collector-chart/pull/658))
-
-### Changed
-
-- Docker metadata turned off by default ([#655](https://github.com/signalfx/splunk-otel-collector-chart/pull/665))
-
-### Fixed
-
-- Translation of `k8s.pod.labels.app` attribute to SCK format ([#660](https://github.com/signalfx/splunk-otel-collector-chart/pull/660))
-
-## [0.70.0] - 2023-01-31
+## [0.70.0] - 2022-01-31
 
 ### Added
 
@@ -39,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Limit `clusterReceiver.eventsEnabled` deprecation warning to feature users ([#648](https://github.com/signalfx/splunk-otel-collector-chart/pull/648))
 - Fix noop validation for missing platform info ([#649](https://github.com/signalfx/splunk-otel-collector-chart/pull/649))
 
-## [0.68.0] - 2023-01-25
+## [0.68.0] - 2022-01-25
 
 ### Added
 
