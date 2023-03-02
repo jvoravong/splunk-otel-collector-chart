@@ -103,3 +103,8 @@ clusterReceiver:
     - name: nodes
     - name: events
       mode: watch
+
+networkExplorer:
+  # This flag enables Kubernetes objects collection using OpenTelemetry Kubernetes Object Receiver
+  # https://docs.splunk.com/Observability/infrastructure/network-explorer/network-explorer-metrics.html
+  enabled: true
