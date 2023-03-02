@@ -103,3 +103,15 @@ clusterReceiver:
     - name: nodes
     - name: events
       mode: watch
+
+gateway:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+
+networkExplorer:
+  # This flag enables Kubernetes objects collection using OpenTelemetry Kubernetes Object Receiver
+  # https://docs.splunk.com/Observability/infrastructure/network-explorer/network-explorer-metrics.html
+  enabled: true
