@@ -11,7 +11,7 @@ jobs:
         container_runtime:
           - "docker --driver=docker"
           - "containerd --driver=docker"
-          - "cri-o --driver=podman"
+          - "cri-o --driver=kvm2"
     env:
       CI_SPLUNK_PORT: 8089
       CI_SPLUNK_USERNAME: admin
