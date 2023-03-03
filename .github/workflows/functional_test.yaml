@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         container_runtime:
-          - "docker --driver=podma"
+          - "docker --driver=docker"
           - "containerd --driver=docker"
           - "cri-o --driver=podman"
     env:
