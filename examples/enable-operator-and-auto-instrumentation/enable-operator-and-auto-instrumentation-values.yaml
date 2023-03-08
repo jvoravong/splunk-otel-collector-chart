@@ -6,13 +6,6 @@ splunkObservability:
   realm: us0
 clusterName: CHANGEME
 environment: CHANGEME
-metricsEnabled: true
-logsEnabled: false
-tracesEnabled: true
 
 operator:
-  manager:
-    autoInstrumentationImage:
-      java:
-        repository: jvsplk/splunk-otel-java
-        tag: 1.0.2
+  enabled: true

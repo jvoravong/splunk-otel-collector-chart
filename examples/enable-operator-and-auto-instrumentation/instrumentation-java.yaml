@@ -5,6 +5,10 @@ metadata:
 spec:
   exporter:
     endpoint: http://$(SPLUNK_OTEL_AGENT):4317
+  propagators:
+    - tracecontext
+    - baggage
+    - b3
   java:
     env:
       - name: SPLUNK_OTEL_AGENT

@@ -1,3 +1,4 @@
+
 # Configurable parameters and default values for splunk-otel-collector.
 # This is a YAML-formatted file.
 # Declared variables will be passed into templates.
@@ -1348,4 +1349,4 @@ operator:
       java:
         # TODO: Update this after OTL-1312 Add support for Java auto-instrumentation
         repository: jvsplk/splunk-otel-java
-        tag: 1.0.2
+        tag: v1.21.9
