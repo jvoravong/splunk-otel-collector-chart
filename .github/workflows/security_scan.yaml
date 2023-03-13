@@ -1,0 +1,51 @@
+name: trivy-security-scanning
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: '39 17 * * 5'
+
+permissions:
+  security-events: write # To upload sarif files
+
+jobs:
+  chart-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3.5
+        with:
+          version: v3.6.3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Splunk
+        run: |
+              find /tmp -type d -name -regex  '.*\(collector-agent-only\|collector-clusterReceiver-only\|collector-gateway-only\|*operator*\*network*\|)$' -prune -exec rm -rf {} +
+
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
+        with:
+          scan-type: 'config'
+          format: 'sarif'
+          scan-ref: '.'
+          output: 'trivy-results.sarif'
+          ignore-unfixed: true
+          skip-dirs: 'test'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+          # Used to differentiate multiple results for one commit
+          category: trivy

@@ -17,5 +17,5 @@ repos:
       exclude: "^examples|^test"
     - id: check-yaml
       # Can't check source yaml since it has go templates in it.
-      exclude: "^helm-charts|^test"
+      exclude: "^helm-charts|^test|.*operator.*"
     - id: check-added-large-files

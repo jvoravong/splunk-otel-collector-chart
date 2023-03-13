@@ -113,3 +113,6 @@ gateway:
 
 networkExplorer:
   enabled: true
+
+operator:
+  enabled: true

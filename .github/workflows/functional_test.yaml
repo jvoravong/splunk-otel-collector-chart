@@ -45,7 +45,7 @@ jobs:
           sudo mv minikube /usr/local/bin/
           sudo sysctl fs.protected_regular=0
           # Start Minikube and Wait
-          minikube start --container-runtime=${CONTAINER_RUNTIME} --cpus 2 --memory 4096 --kubernetes-version=${KUBERNETES_VERSION} --no-vtx-check
+          minikube start --container-runtime=${CONTAINER_RUNTIME} --cpus 2 --memory 5368 --kubernetes-version=${KUBERNETES_VERSION} --no-vtx-check
           kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
           export JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'
           until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do
@@ -76,6 +76,11 @@ jobs:
           curl -X POST -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD -k -d "name=splunk_hec_token&token=a6b5e77f-d5f6-415a-bd43-930cecb12959&disabled=0&index=main&indexes=main,ci_events,ci_metrics,ns-anno,pod-anno" https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/servicesNS/nobody/splunk_httpinput/data/inputs/http
           # Restart Splunk
           curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/server/control/restart -X POST
+
+      - name: Deploy cert-manager
+        run: |
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.10.2/cert-manager.yaml
+          sleep 60
 
       - name: Deploy sck otel collector
         run: |
@@ -113,3 +118,18 @@ jobs:
 #          kubectl get pods -l release=ci-sck --no-headers=true  | awk '/agent/{print $1}' | xargs kubectl logs
 #          echo "Getting collector logs....."
 #          kubectl get pods -l release=ci-sck --no-headers=true  | awk '/cluster/{print $1}' | xargs kubectl logs
+
+      - name: Run Trivy vulnerability scanner in IaC mode
+        run: |
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.deb
+          sudo dpkg -i trivy_0.18.3_Linux-64bit.deb
+          trivy k8s --report summary
+          trivy config . --output 'trivy-results.sarif'
+
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+          # Used to differentiate multiple results for one commit
+          category: trivy
