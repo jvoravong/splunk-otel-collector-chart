@@ -15,7 +15,7 @@ jobs:
           - "cri-o"
         # For up-to-date information see: https://github.com/kubernetes/minikube/releases
         kubernetes_version:
-          - "v1.25.3"
+          - "v1.25.1"
           - "v1.24.3"
           - "v1.23.6"
     env:
@@ -31,31 +31,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-#
-      - name: start minikube
-        id: minikube
-        uses: medyagh/setup-minikube@latest
-        with:
-          container-runtime: ${{ matrix.container_runtime }}
-          kubernetes-version: ${{matrix.kubernetes_version}}
-          cpus: 2
-          memory: 4g
-          network-plugin: cni
-#          cni: calico
-#          start args:  --no-vtx-check
 
-#      - name: Setup Minikube
-#        run: |
-#          # Install Minikube
-#          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-#          sudo install minikube-linux-amd64 /usr/local/bin/minikube
-#          sudo sysctl fs.protected_regular=0
-#          # Start Minikube and Wait
-#          minikube start --container-runtime=${CONTAINER_RUNTIME} --cpus 2 --memory 5368 --kubernetes-version=${KUBERNETES_VERSION} --no-vtx-check
-#          kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
-#          sleep 5
-#            kubectl wait --for=condition=Ready nodes --all --timeout=180s
-#          sleep 5
+      - name: Setup Minikube
+        run: |
+          # Install Minikube
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          sudo sysctl fs.protected_regular=0
+          # Start Minikube and Wait
+          minikube start --container-runtime=${CONTAINER_RUNTIME} --cpus 2 --memory 5g --kubernetes-version=${KUBERNETES_VERSION} --no-vtx-check
+          kubectl apply -f https://docs.projectcalico.org/v3.24/manifests/calico.yaml
+          sleep 5
+            kubectl wait --for=condition=Ready nodes --all --timeout=180s
+          sleep 5
 
       - name: Install Splunk
         run: |
