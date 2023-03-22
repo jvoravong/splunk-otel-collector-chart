@@ -47,27 +47,17 @@ jobs:
 
       - name: Install Splunk
         run: |
-          kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
-
           # Wait until default service account is created
           until kubectl -n default get serviceaccount default -o name; do
             sleep 1;
           done
-
           # Install Splunk on minikube
           kubectl apply -f ci_scripts/k8s-splunk.yml
-
-          # Deploy Splunk OpenTelemetry Collector
+          # Wait until splunk is ready
+          until kubectl logs splunk --tail=2 | grep -q 'Ansible playbook complete'; do
+            sleep 1;
+          done
           export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
-          ci_scripts/deploy_collector.sh
-          export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
-
-          # Deploy log generator
-          kubectl apply -f test/test_setup.yaml
-
-          sleep 5
-          kubectl rollout status deployment golang-hello-world-web -n default --timeout=3000s
-
           # Setup Indexes
           curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=$CI_INDEX_EVENTS -d datatype=event
           curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=ns-anno -d datatype=event
@@ -110,6 +100,12 @@ jobs:
           	--splunk-user admin \
           	--splunk-password $CI_SPLUNK_PASSWORD \
           	-p no:warnings -s
+#          # Leave this here for debugging
+#          sleep 180
+#          echo "Getting agent logs....."
+#          kubectl get pods -l release=ci-sck --no-headers=true  | awk '/agent/{print $1}' | xargs kubectl logs
+#          echo "Getting collector logs....."
+#          kubectl get pods -l release=ci-sck --no-headers=true  | awk '/cluster/{print $1}' | xargs kubectl logs
 
       - name: Debug info
         if: always()
