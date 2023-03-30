@@ -4,6 +4,7 @@ version: 0.72.0
 appVersion: 0.72.0
 description: Splunk OpenTelemetry Collector for Kubernetes
 icon: https://github.com/signalfx/splunk-otel-collector-chart/tree/main/splunk.png
+engine: gotpl
 type: application
 keywords:
 - splunk
