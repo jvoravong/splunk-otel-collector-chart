@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 1409-test
     # Release only on changes in Chart.yaml
     paths:
       - helm-charts/**/Chart.yaml
@@ -26,6 +27,9 @@ jobs:
         uses: azure/setup-helm@v3.5
         with:
           version: v3.5.4
+
+      - name: Set up chart dependencies
+        run: make repo-update dep-build
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
