@@ -1168,6 +1168,36 @@
         "replicaCount": {
           "type": "integer"
         },
+        "autoscaling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "minReplicas": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "maxReplicas": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "behavior": {
+              "type": "object"
+            },
+            "targetCPUUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "targetMemoryUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
         "ports": {
           "type": "object",
           "patternProperties": {

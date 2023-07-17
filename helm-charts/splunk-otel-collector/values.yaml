@@ -1010,6 +1010,13 @@ gateway:
 
   # Number of collector replicas
   replicaCount: 3
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    behavior: {}
+    # targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 50
 
   # The ports exposed by the collector container.
   # Any port can be disabled by setting to null.

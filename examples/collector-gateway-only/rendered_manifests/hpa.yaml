@@ -1,0 +1,32 @@
+---
+# Source: splunk-otel-collector/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: default-splunk-otel-collector
+  labels:
+    app.kubernetes.io/name: splunk-otel-collector
+    helm.sh/chart: splunk-otel-collector-0.80.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: "0.80.0"
+    app: splunk-otel-collector
+    component: otel-collector-gateway
+    chart: splunk-otel-collector-0.80.0
+    release: default
+    heritage: Helm
+    app.kubernetes.io/component: otel-collector-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: default-splunk-otel-collector
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 50

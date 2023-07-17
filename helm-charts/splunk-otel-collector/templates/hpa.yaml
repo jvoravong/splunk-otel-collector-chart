@@ -1,0 +1,43 @@
+{{- if and .Values.gateway.enabled .Values.gateway.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "splunk-otel-collector.fullname" . }}
+  labels:
+    {{- include "splunk-otel-collector.commonLabels" . | nindent 4 }}
+    app: {{ template "splunk-otel-collector.name" . }}
+    component: otel-collector-gateway
+    chart: {{ template "splunk-otel-collector.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    app.kubernetes.io/component: otel-collector-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ template "splunk-otel-collector.fullname" . }}
+  minReplicas: {{ .Values.gateway.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.gateway.autoscaling.maxReplicas }}
+  {{- if .Values.gateway.autoscaling.behavior }}
+  behavior:
+    {{- toYaml .Values.gateway.autoscaling.behavior | nindent 4 }}
+  {{- end }}
+  metrics:
+  {{- if .Values.gateway.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gateway.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- else if .Values.gateway.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gateway.autoscaling.targetCPUUtilizationPercentage }}
+  {{- else }}
+    {{- fail "When gateway.enabled=true and gateway.autoscaling.enabled=true, then .Values.gateway.autoscaling.targetCPUUtilizationPercentage or .Values.gateway.autoscaling.targetMemoryUtilizationPercentage must be set" -}}
+  {{- end }}
+{{- end }}

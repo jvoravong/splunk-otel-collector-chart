@@ -5,11 +5,15 @@ splunkObservability:
 
 gateway:
   enabled: true
-  replicaCount: 1
+  autoscaling:
+    enabled: true
+  # For local development k8s clusters (1 node large), it is recommended users downsize the gateway resources
+  # Default CPU Limit: 4
+  # Default Memory Limit: 8Gi
   resources:
-    limits:
-      cpu: 2
-      memory: 4Gi
+   limits:
+    cpu: 1
+    memory: 2Gi
 agent:
   enabled: false
 clusterReceiver:
