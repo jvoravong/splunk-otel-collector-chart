@@ -42,7 +42,7 @@ jobs:
             echo "New version number is: ${NEW_VER}"
             echo "sed: ${VLINE}s/${OLD_VER}/${NEW_VER}/"
             sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" $VALUES_YAML
-            echo "Current Git Diff:"
+            echo "Current git diff:"
             git --no-pager diff
           fi
       - name: Render chart templates
@@ -55,16 +55,8 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential zip helm gh
           make render
-          echo "Current Git Diff:"
+          echo "Current git diff:"
           git --no-pager diff
-      - name: Checkout new branch and commit changes
-        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
-        run: |
-          echo "Creating new branch..."
-          git config --global user.email "bot@example.com"
-          git config --global user.name "Your Bot"
-          git checkout -b "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
-          git commit -am "Update ${{ matrix.language }} instrumentation version"
       - name: PR the new version
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
