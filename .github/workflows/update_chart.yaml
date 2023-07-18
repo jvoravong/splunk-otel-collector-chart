@@ -32,10 +32,11 @@ jobs:
           IFS='.' read -ra LATEST_VERSION <<< "$LATEST_APP_VER"
 
           # Check if major or minor version update has occurred
+          # At this time we only support creating releases that contain a major or minor version update, incremental
+          # patch releases must be created manually.
           if [[ "${LATEST_VERSION[0]}" -gt "${CURRENT_VERSION[0]}" || ("${LATEST_VERSION[0]}" -eq "${CURRENT_VERSION[0]}" && "${LATEST_VERSION[1]}" -gt "${CURRENT_VERSION[1]}") ]]; then
             echo "Updating appVersion in Chart.yaml"
             echo "NEED_UPDATE=1" >> $GITHUB_ENV
-            # At this time we don't support auto patch releases, they are created manually.
             yq eval ".version = \"${LATEST_VERSION[0]}.${LATEST_VERSION[1]}.0\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
             yq eval ".appVersion = \"$LATEST_APP_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
           else
