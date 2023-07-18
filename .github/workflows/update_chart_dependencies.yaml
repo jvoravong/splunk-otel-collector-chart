@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # Currently this worfklow will update the listed dependencies in the Chart.yaml
         repo: ['cert-manager', 'opentelemetry-operator'] # Add other repos here
     steps:
       - uses: actions/checkout@v3.5.3
