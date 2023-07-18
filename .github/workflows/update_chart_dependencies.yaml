@@ -40,18 +40,14 @@ jobs:
 
             # Update the version in chart.yaml using yq and jq
             DEP_LINE=$(yq eval ".dependencies | keys | map(tonumber) | map(select(. != null)) | map(select(. < 10000)) | map(. + 1)" $CHART_YAML | jq ".[] | select(.[\"name\"] == \"${{ matrix.repo }}\")")
-
             sed -i "${DEP_LINE}s/$DEP_PATH/$LATEST_VER/" $CHART_YAML
+
+            echo Updating rendered examples
+            make render
 
             echo "Current git diff:"
             git --no-pager diff
           fi
-      - name: Render chart templates
-        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
-        run: |
-          make render
-          echo "Current git diff:"
-          git --no-pager diff
       - name: PR the new version
         if: ${{ steps.update_chart.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
