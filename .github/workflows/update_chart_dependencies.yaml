@@ -48,6 +48,12 @@ jobs:
             echo "Current git diff:"
             git --no-pager diff
           fi
+      - name: Render chart templates
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          make render
+          echo "Current git diff:"
+          git --no-pager diff
       - name: PR the new version
         if: ${{ steps.update_chart.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
