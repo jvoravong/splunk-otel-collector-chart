@@ -36,12 +36,13 @@ jobs:
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
             VLINE=$(grep -n "${REPO}" $VALUES_YAML | cut -f1 -d:)
             echo "Line number for ${REPO} in ${VALUES_YAML} is: ${VLINE}"
-            OLD_VER=$(sed -n "${VLINE}p" $VALUES_YAML | awk -F: '{print $4}' | awk -Fv '{print $2}' | tr -d ' ')
+            OLD_VER=$(sed -n "${VLINE}p" $VALUES_YAML | grep -oP 'v\K[0-9.]+')
             echo "Old version number is: ${OLD_VER}"
             NEW_VER=${LATEST_VER#v} # removes 'v' from the start of the string
             echo "New version number is: ${NEW_VER}"
             echo "sed: ${VLINE}s/${OLD_VER}/${NEW_VER}/"
             sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" $VALUES_YAML
+            echo "Current Git Diff:"
             git --no-pager diff
           fi
       - name: Render chart templates
@@ -54,6 +55,7 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential zip helm gh
           make render
+          echo "Current Git Diff:"
           git --no-pager diff
       - name: Checkout new branch and commit changes
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
