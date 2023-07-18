@@ -1,7 +1,9 @@
+# Renders the Helm templates for all use case scenarios in ./examples
 .PHONY: render
 render: repo-update dep-build
 	bash ./examples/render-examples.sh
 
+# Ensures the required Helm repositories are available
 .PHONY: repo-update
 repo-update:
 	@{ \
@@ -14,6 +16,7 @@ repo-update:
 	helm repo update open-telemetry jetstack ;\
 	}
 
+# Ensures the Helm chart dependencies are current and built
 .PHONY: dep-build
 dep-build:
 	@{ \
@@ -22,4 +25,13 @@ dep-build:
 	if ! helm dependencies list $$DIR | grep open-telemetry | grep -q ok ; then OK=false ; fi ;\
 	if ! helm dependencies list $$DIR | grep jetstack | grep -q ok ; then OK=false ; fi ;\
 	if ! $$OK ; then helm dependencies build $$DIR ; fi ;\
+	}
+
+# Updates the CHANGELOG.md for a new release
+.PHONY: changelog-release
+changelog:
+	@{ \
+	VERSION=$$(yq eval '.version' helm-charts/splunk-otel-collector/Chart.yaml) ;\
+  DATE=$$(date +%Y-%m-%d) ;\
+  sed -i '' "s/## Unreleased/## Unreleased\n\n## [v$$VERSION] - $$DATE/g" ./CHANGELOG.md ;\
 	}
