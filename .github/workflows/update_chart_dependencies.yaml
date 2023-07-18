@@ -21,8 +21,8 @@ jobs:
       - name: Update Chart
         id: update_chart
         run: |
-          DEP_PATH=$(yq e '.dependencies[] | select(.name == "${{ matrix.repo }}") | .version' $CHART_YAML)
-          LATEST_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API | sed "s/{repo}/${{ matrix.repo }}/g") | jq -r --arg pattern "${{ matrix.repo }}-*" '.[] | select(.name | test($pattern)) | .name' | sort -V | tail -n1 | awk -F- '{print $NF}')
+          DEP_PATH=$(yq e ".dependencies[] | select(.name == \"${{ matrix.repo }}\")" $CHART_YAML -j | jq -r '.version')
+          LATEST_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API | sed "s/{repo}/${{ matrix.repo }}/g") | jq -r .tag_name)
           echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
           echo "Current version of ${{ matrix.repo }} is $DEP_PATH, latest is $LATEST_VER"
           if [ "$LATEST_VER" == "$DEP_PATH" ]; then
@@ -31,7 +31,8 @@ jobs:
             echo 'Looks like we need to update...'
             echo Updating to new version in chart.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
-            yq e -i --inplace ".dependencies[] |= if .name == \"${{ matrix.repo }}\" then .version = \"$LATEST_VER\" else . end" $CHART_YAML
+            yq e ".dependencies[] |= if .name == \"${{ matrix.repo }}\" then .version = \"$LATEST_VER\" else . end" $CHART_YAML | yq eval -P > chart_updated.yaml
+            mv chart_updated.yaml $CHART_YAML
             echo "Current git diff:"
             git --no-pager diff
           fi
