@@ -21,12 +21,12 @@ jobs:
           make repo-update
 
           # Fetch the latest version from the GitHub repository
-          LATEST_APP_VER=$(curl -s $REPO_URL/releases/latest | grep -oP '(?<=tag\/v)[^"]+')
+          LATEST_APP_VER=$(curl -s "https://api.github.com/repos/signalfx/splunk-otel-collector/releases/latest" | jq -r '.tag_name' | cut -d "v" -f 2)
+          echo "Latest https://github.com/signalfx/splunk-otel-collector appVersion is #LATEST_APP_VER"
 
           # Retrieve the current version from chart.yaml
           CURRENT_VERSION=$(yq eval '.version' $CHART_YAML)
           CURRENT_APP_VERSION=$(yq eval '.appVersion' $CHART_YAML)
-
           echo "Current version is $CURRENT_VERSION, latest appVersion is $LATEST_APP_VER"
 
           # Extract major and minor versions from the current and latest appVersions
