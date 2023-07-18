@@ -1,0 +1,58 @@
+name: Auto Draft Release
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+env:
+  CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
+  REPO_URL: https://github.com/signalfx/splunk-otel-collector
+
+jobs:
+  auto_draft_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.5.3
+      - name: Update Chart Version
+        id: update_chart_version
+        run: |
+          # Run make repo-update to ensure repositories are up-to-date
+          make repo-update
+
+          # Fetch the latest version from the GitHub repository
+          LATEST_APP_VER=$(curl -s $REPO_URL/releases/latest | grep -oP '(?<=tag\/v)[^"]+')
+
+          # Retrieve the current version from chart.yaml
+          CURRENT_VERSION=$(yq eval '.version' $CHART_YAML)
+          CURRENT_APP_VERSION=$(yq eval '.appVersion' $CHART_YAML)
+
+          echo "Current version is $CURRENT_VERSION, latest appVersion is $LATEST_APP_VER"
+
+          # Extract major and minor versions from the current and latest appVersions
+          CURRENT_MAJOR_MINOR=$(echo $CURRENT_APP_VERSION | cut -d. -f1-2)
+          LATEST_MAJOR_MINOR=$(echo $LATEST_APP_VER | cut -d. -f1-2)
+
+          if [ "$LATEST_APP_VER" == "$CURRENT_APP_VERSION" ]; then
+            echo "The appVersion is already up to date. Nothing else to do."
+          elif [ "$LATEST_MAJOR_MINOR" == "$CURRENT_MAJOR_MINOR" ]; then
+            echo "Updating appVersion in Chart.yaml"
+            echo "NEED_UPDATE=1" >> $GITHUB_ENV
+            yq eval ".appVersion = \"$LATEST_APP_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
+          else
+            echo "Updating major or minor version. Creating a release is required."
+            echo "NEED_UPDATE=1" >> $GITHUB_ENV
+            yq eval ".appVersion = \"$LATEST_APP_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
+          fi
+      - name: PR the new version
+        if: env.NEED_UPDATE == '1'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: Update chart version
+          title: Update chart version to ${{ steps.update_chart_version.outputs.LATEST_APP_VER }}
+          body: |
+            Update the appVersion in the Chart.yaml file to ${{ steps.update_chart_version.outputs.LATEST_APP_VER }}.
+            This will reflect the latest version from the repository.
+          branch: "update-chart-version-${{ steps.update_chart_version.outputs.LATEST_APP_VER }}"
+          base: main
+          draft: true
