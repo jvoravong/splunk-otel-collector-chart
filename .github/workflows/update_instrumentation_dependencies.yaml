@@ -32,11 +32,12 @@ jobs:
             echo '(If this fails, the agent version is out of sync with ghcr version)'
             docker pull $REPO:$LATEST_VER
             echo 'Looks like we are good to update...'
-            echo Updating to new version
+            echo Updating to new version in values.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
-            VLINE=$(grep -n $REPO $VALUES_YAML | cut -f1 -d:)
-            echo sed -i "${VLINE}s|:${LOCAL_VER}|:${LATEST_VER}|" $VALUES_YAML
-            sed -i "${VLINE}s|:${LOCAL_VER}|:${LATEST_VER}|" $VALUES_YAML
+            VLINE=$(grep -n "${REPO}" $VALUES_YAML | cut -f1 -d:)
+            OLD_VER=$(sed -n "${VLINE}p" $VALUES_YAML | awk -F: '{print $2}' | awk -Fv '{print $2}' | tr -d ' ')
+            NEW_VER=${LATEST_VER#v} # removes 'v' from the start of the string
+            sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" $VALUES_YAML
             git --no-pager diff
           fi
       - name: Render chart templates
@@ -50,11 +51,13 @@ jobs:
           sudo apt install -y build-essential zip helm gh
           make render
           git --no-pager diff
-      - name: Commit any updates
+      - name: Checkout new branch and commit changes
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         run: |
+          echo "Creating new branch..."
           git config --global user.email "bot@example.com"
           git config --global user.name "Your Bot"
+          git checkout -b "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
           git commit -am "Update ${{ matrix.language }} instrumentation version"
       - name: PR the new version
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
@@ -65,3 +68,5 @@ jobs:
           body: Use the new version of the ${{ matrix.language }} instrumentation library
           branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
           base: main
+          delete-branch: true
+          modify-outputs: false
