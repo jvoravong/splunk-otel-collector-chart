@@ -7,7 +7,6 @@ on:
 
 env:
   CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
-  LATEST_API: https://api.github.com/repos/{repo}/releases/latest
 
 jobs:
   maybe_update:
@@ -19,24 +18,33 @@ jobs:
       - uses: actions/checkout@v3.5.3
       - name: Update Chart
         id: update_chart
-        run: |          # Run make repo-update to ensure repositories are up-to-date
+        run: |
+          # Run make repo-update to ensure repositories are up-to-date
           make repo-update
+
           # Fetch the latest version using helm search repo
           LATEST_VER=$(helm search repo ${{ matrix.repo }} --versions | awk 'NR==2{print $2}')
           echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
-          # Retrieve the current version from chart.yaml
-          DEP_PATH=$(yq e ".dependencies[] | select(.name == \"${{ matrix.repo }}\") | .version" $CHART_YAML)
 
-          echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
-          echo "Current version of ${{ matrix.repo }} is $DEP_PATH, latest is $LATEST_VER"
-          if [ "$LATEST_VER" == "$DEP_PATH" ]; then
+          # Retrieve the current version from chart.yaml
+          DEP_LINE=$(yq eval ".dependencies[].name" $CHART_YAML | grep -n "${{ matrix.repo }}" | cut -d ':' -f 1)
+          DEP_INDENT=$(yq eval ".dependencies[$DEP_LINE]" $CHART_YAML | awk '{ match($0, /(\s*)-/, a); print a[1] }')
+          DEP_ENTRY=$(yq eval ".dependencies[$DEP_LINE]" $CHART_YAML)
+
+          echo "Current version of ${{ matrix.repo }} is $(yq eval "$DEP_ENTRY | .version" -)", "latest is $LATEST_VER"
+
+          if [ "$(yq eval "$DEP_ENTRY | .version" -)" == "$LATEST_VER" ]; then
             echo We are already up to date. Nothing else to do.
           else
             echo 'Looks like we need to update...'
             echo Updating to new version in chart.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
-            DEP_LINE=$(yq e ".dependencies[].name" $CHART_YAML | jq -r ". | map(select(. == \"${{ matrix.repo }}\")) | keys | .[0]")
-            yq eval ".dependencies[$DEP_LINE].version = \"$LATEST_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
+
+            # Update the version in chart.yaml
+            echo "$(yq eval "$DEP_ENTRY | .version = \"$LATEST_VER\"" -)" > temp_dep.yaml
+            sed -i "${DEP_LINE}r temp_dep.yaml" $CHART_YAML
+            rm temp_dep.yaml
+
             echo "Current git diff:"
             git --no-pager diff
           fi
