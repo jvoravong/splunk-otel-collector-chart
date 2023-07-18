@@ -35,7 +35,7 @@ jobs:
             echo 'Looks like we need to update...'
             echo Updating to new version in chart.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
-            DEP_LINE=$(yq eval --tojsonpath=".dependencies[].name" $CHART_YAML | jq -r ". | map(select(. == \"${{ matrix.repo }}\")) | keys | .[0]")
+            DEP_LINE=$(yq e ".dependencies[].name" $CHART_YAML | jq -r ". | map(select(. == \"${{ matrix.repo }}\")) | keys | .[0]")
             yq eval ".dependencies[$DEP_LINE].version = \"$LATEST_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
             echo "Current git diff:"
             git --no-pager diff
