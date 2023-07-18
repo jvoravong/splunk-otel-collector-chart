@@ -2,6 +2,7 @@ name: Check for new instrumentation versions
 
 on:
   schedule:
+    # This cron job is scheduled to run at minute 45 past every 4th hour.
     - cron: "45 */4 * * *"
   workflow_dispatch:
 
@@ -32,14 +33,20 @@ jobs:
             echo '(If this fails, the agent version is out of sync with ghcr version)'
             docker pull $REPO:$LATEST_VER
             echo 'Looks like we are good to update...'
-            echo Updating to new version
+            echo Updating to new version in values.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
-            VLINE=$(grep -n $REPO $VALUES_YAML | cut -f1 -d:)
-            echo sed -i "${VLINE}s|:${LOCAL_VER}|:${LATEST_VER}|" $VALUES_YAML
-            sed -i "${VLINE}s|:${LOCAL_VER}|:${LATEST_VER}|" $VALUES_YAML
+            VLINE=$(grep -n "${REPO}" $VALUES_YAML | cut -f1 -d:)
+            echo "Line number for ${REPO} in ${VALUES_YAML} is: ${VLINE}"
+            OLD_VER=$(sed -n "${VLINE}p" $VALUES_YAML | grep -oP 'v\K[0-9.]+')
+            echo "Old version number is: ${OLD_VER}"
+            NEW_VER=${LATEST_VER#v} # removes 'v' from the start of the string
+            echo "New version number is: ${NEW_VER}"
+            echo "sed: ${VLINE}s/${OLD_VER}/${NEW_VER}/"
+            sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" $VALUES_YAML
+            echo "Current git diff:"
             git --no-pager diff
           fi
-      - name: render some templates
+      - name: Render chart templates
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         run: |
           echo Making the templates
@@ -49,13 +56,16 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential zip helm gh
           make render
+          echo "Current git diff:"
           git --no-pager diff
       - name: PR the new version
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: Update ${{ matrix.language }} instrumentation version
-          title: Update ${{ matrix.language }} agent version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
-          body: Use the new version of the ${{ matrix.language }} instrumentation library
+          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
+          body: Use the new version of the ${{ matrix.language }} instrumentation
           branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
           base: main
+          delete-branch: true
+          modify-outputs: false

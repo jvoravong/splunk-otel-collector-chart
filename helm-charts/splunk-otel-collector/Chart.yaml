@@ -31,3 +31,27 @@ dependencies:
     alias: operator
     repository: https://open-telemetry.github.io/opentelemetry-helm-charts
     condition: operator.enabled
+# Source code repositories related to this chart and its components
+sources:
+  # Source code for the Helm Chart
+  - https://github.com/signalfx/splunk-otel-collector-chart/tree/main/helm-charts/splunk-otel-collector
+  # Source code for the Splunk distribution of the collector and inherited OpenTelemetry code deployed by this chart
+  - https://github.com/signalfx/splunk-otel-collector
+  - https://github.com/open-telemetry/opentelemetry-collector
+  - https://github.com/open-telemetry/opentelemetry-collector-contrib
+  - https://github.com/open-telemetry/opentelemetry-helm-charts
+  # Source code for optional deployable components
+  - https://github.com/signalfx/splunk-otel-java
+  - https://github.com/open-telemetry/opentelemetry-operator
+  - https://github.com/open-telemetry/opentelemetry-ebpf
+# Links to documentation related to this chart and its components
+docs:
+  # Splunk Otel Collector Chart Documentation
+  - https://docs.splunk.com/Observability/gdi/opentelemetry/install-k8s.html#install-the-collector-with-the-helm-chart
+  - https://github.com/signalfx/splunk-otel-collector-chart/tree/main/docs
+  - https://docs.splunk.com/Observability/gdi/opentelemetry/configure-the-collector.html
+  # Related OpenTelemetry Collector Documentation
+  - https://opentelemetry.io/docs/
+  - https://github.com/open-telemetry/opentelemetry-collector/tree/main/docs
+  - https://opentelemetry.io/docs/specs/otel/
+
