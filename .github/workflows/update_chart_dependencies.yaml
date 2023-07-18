@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
+  CHART_YAML: ./helm-charts/splunk-otel-collector/Chart.yaml
   LATEST_API: https://api.github.com/repos/{repo}/releases/latest
 
 jobs:
