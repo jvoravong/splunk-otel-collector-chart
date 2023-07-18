@@ -24,7 +24,7 @@ dependencies:
   - name: cert-manager
     version: 1.12.2
     alias: certmanager
-    repository: https://charts.jetstack.io
+    repository: https://github.com/cert-manager/cert-manager
     condition: certmanager.enabled
   - name: opentelemetry-operator
     version: 0.32.0

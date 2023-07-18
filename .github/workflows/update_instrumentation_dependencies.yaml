@@ -2,10 +2,12 @@ name: Check for new instrumentation versions
 
 on:
   schedule:
+    # This cron job is scheduled to run at minute 45 past every 4th hour.
     - cron: "45 */4 * * *"
   workflow_dispatch:
 
 env:
+  CHART_YAML: helm-charts/splunk-otel-collector/chart.yaml
   VALUES_YAML: helm-charts/splunk-otel-collector/values.yaml
   LATEST_API: https://api.github.com/repos/signalfx/splunk-otel-{lang}/releases/latest
 
@@ -14,37 +16,51 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        language: ['java'] # Add other languages here
+        component:
+          - type: 'language'
+            name: 'java'
+            repo: 'ghcr.io/signalfx/splunk-otel-java/splunk-otel-java'
+            api: 'https://api.github.com/repos/signalfx/splunk-otel-java/releases/latest'
+            yamlPath: ${{ env.VALUES_YAML }}
+          - type: 'chartDependency'
+            name: 'opentelemetry-operator'
+            repo: 'opentelemetry-operator'
+            api: 'https://api.github.com/repos/open-telemetry/opentelemetry-operator/releases/latest'
+            yamlPath: ${{ env.CHART_YAML }}
+          - type: 'chartDependency'
+            name: 'cert-manager'
+            repo: 'cert-manager'
+            api: 'github.com/cert-manager/cert-manager/releases/latest'
+            yamlPath: ${{ env.CHART_YAML }}
+
     steps:
-      - uses: actions/checkout@v3.5.3
-      - name: swizzle version
+      - uses: actions/checkout@v3.5.3-
+        name: swizzle version
         id: swizzle_version
         run: |
-          REPO=ghcr.io/signalfx/splunk-otel-${{ matrix.language }}/splunk-otel-${{ matrix.language }}
-          LOCAL_VER=$(grep $REPO $VALUES_YAML | awk -F: '{print $2}' | tr -d ' "')
-          LATEST_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API | sed "s/{lang}/${{ matrix.language }}/g") | jq -r .tag_name)
-          echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
-          echo "Current version of ${{ matrix.language }} is $LOCAL_VER, latest is $LATEST_VER"
+          REPO=${{ matrix.component.repo }}
+          LOCAL_VER=$(grep $REPO ${{ matrix.component.yamlPath }} | awk -F: '{print $2}' | tr -d ' "')
+          LATEST_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo ${{ matrix.component.api }}) | jq -r .tag_name)
+          echo "LATEST_VER=$LATEST_VER" >> $GITHUB_ENV
+          echo "Current version of ${{ matrix.component.name }} is $LOCAL_VER, latest is $LATEST_VER"
           if [ "$LATEST_VER" == "$LOCAL_VER" ]; then
             echo We are already up to date. Nothing else to do.
           else
-            echo 'Verifying that the image is pullable...'
-            echo '(If this fails, the agent version is out of sync with ghcr version)'
-            docker pull $REPO:$LATEST_VER
             echo 'Looks like we are good to update...'
-            echo Updating to new version in values.yaml
-            echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
-            VLINE=$(grep -n "${REPO}" $VALUES_YAML | cut -f1 -d:)
-            echo "Line number for ${REPO} in ${VALUES_YAML} is: ${VLINE}"
-            OLD_VER=$(sed -n "${VLINE}p" $VALUES_YAML | grep -oP 'v\K[0-9.]+')
+            echo Updating to new version in ${{ matrix.component.yamlPath }}
+            echo "NEED_UPDATE=1" >> $GITHUB_ENV
+            VLINE=$(grep -n "${REPO}" ${{ matrix.component.yamlPath }} | cut -f1 -d:)
+            echo "Line number for ${REPO} in ${{ matrix.component.yamlPath }} is: ${VLINE}"
+            OLD_VER=$(sed -n "${VLINE}p" ${{ matrix.component.yamlPath }} | grep -oP 'v\K[0-9.]+')
             echo "Old version number is: ${OLD_VER}"
             NEW_VER=${LATEST_VER#v} # removes 'v' from the start of the string
             echo "New version number is: ${NEW_VER}"
             echo "sed: ${VLINE}s/${OLD_VER}/${NEW_VER}/"
-            sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" $VALUES_YAML
+            sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" ${{ matrix.component.yamlPath }}
             echo "Current git diff:"
             git --no-pager diff
           fi
+
       - name: Render chart templates
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         run: |
@@ -58,13 +74,14 @@ jobs:
           echo "Current git diff:"
           git --no-pager diff
       - name: PR the new version
-        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        if: ${{ env.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
         with:
-          commit-message: Update ${{ matrix.language }} instrumentation version
-          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
-          body: Use the new version of the ${{ matrix.language }} instrumentation
-          branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
+          commit-message: Update ${{ matrix.component.name }} version
+          title: Update ${{ matrix.component.name }} version to ${{ env.LATEST_VER }}
+          body: Use the new version of the ${{ matrix.component.name }}
+          branch: "update-${{ matrix.component.name }}-${{ env.LATEST_VER }}"
           base: main
           delete-branch: true
           modify-outputs: false
+
