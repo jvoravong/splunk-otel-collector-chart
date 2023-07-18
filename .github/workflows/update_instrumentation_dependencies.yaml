@@ -39,7 +39,7 @@ jobs:
             sed -i "${VLINE}s|:${LOCAL_VER}|:${LATEST_VER}|" $VALUES_YAML
             git --no-pager diff
           fi
-      - name: render some templates
+      - name: Render chart templates
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         run: |
           echo Making the templates
@@ -50,6 +50,12 @@ jobs:
           sudo apt install -y build-essential zip helm gh
           make render
           git --no-pager diff
+      - name: Commit any updates
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          git config --global user.email "bot@example.com"
+          git config --global user.name "Your Bot"
+          git commit -am "Update ${{ matrix.language }} instrumentation version"
       - name: PR the new version
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
