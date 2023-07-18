@@ -27,8 +27,7 @@ jobs:
           echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
 
           # Retrieve the current version from chart.yaml
-          DEP_LINE=$(yq eval ".dependencies | keys | .[]" $CHART_YAML | grep -n "${{ matrix.repo }}" | cut -d ":" -f1)
-          DEP_PATH=$(yq eval ".dependencies[$DEP_LINE - 1].version" $CHART_YAML)
+          DEP_PATH=$(yq eval ".dependencies[] | select(.name == \"${{ matrix.repo }}\") | .version" $CHART_YAML)
 
           echo "Current version of ${{ matrix.repo }} is $DEP_PATH, latest is $LATEST_VER"
 
@@ -38,6 +37,9 @@ jobs:
             echo 'Looks like we need to update...'
             echo Updating to new version in chart.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
+
+            # Update the version in chart.yaml using yq and jq
+            DEP_LINE=$(yq eval ".dependencies | keys | map(tonumber) | map(select(. != null)) | map(select(. < 10000)) | map(. + 1)" $CHART_YAML | jq ".[] | select(.[\"name\"] == \"${{ matrix.repo }}\")")
 
             sed -i "${DEP_LINE}s/$DEP_PATH/$LATEST_VER/" $CHART_YAML
 
