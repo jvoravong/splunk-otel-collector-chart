@@ -2,7 +2,6 @@ name: Check for new chart dependency updates
 
 on:
   schedule:
-    # This cron job is scheduled to run at minute 45 past every 12th hour.
     - cron: "45 */12 * * *"
   workflow_dispatch:
 
@@ -20,9 +19,14 @@ jobs:
       - uses: actions/checkout@v3.5.3
       - name: Update Chart
         id: update_chart
-        run: |
-          DEP_PATH=$(yq e ".dependencies[] | select(.name == \"${{ matrix.repo }}\")" $CHART_YAML -j | jq -r '.version')
-          LATEST_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API | sed "s/{repo}/${{ matrix.repo }}/g") | jq -r .tag_name)
+        run: |          # Run make repo-update to ensure repositories are up-to-date
+          make repo-update
+          # Fetch the latest version using helm search repo
+          LATEST_VER=$(helm search repo ${{ matrix.repo }} --versions | awk 'NR==2{print $2}')
+          echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
+          # Retrieve the current version from chart.yaml
+          DEP_PATH=$(yq e ".dependencies[] | select(.name == \"${{ matrix.repo }}\") | .version" $CHART_YAML)
+
           echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
           echo "Current version of ${{ matrix.repo }} is $DEP_PATH, latest is $LATEST_VER"
           if [ "$LATEST_VER" == "$DEP_PATH" ]; then
@@ -31,8 +35,8 @@ jobs:
             echo 'Looks like we need to update...'
             echo Updating to new version in chart.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
-            yq e ".dependencies[] |= if .name == \"${{ matrix.repo }}\" then .version = \"$LATEST_VER\" else . end" $CHART_YAML | yq eval -P > chart_updated.yaml
-            mv chart_updated.yaml $CHART_YAML
+            DEP_LINE=$(yq eval --tojsonpath=".dependencies[].name" $CHART_YAML | jq -r ". | map(select(. == \"${{ matrix.repo }}\")) | keys | .[0]")
+            yq eval ".dependencies[$DEP_LINE].version = \"$LATEST_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
             echo "Current git diff:"
             git --no-pager diff
           fi
