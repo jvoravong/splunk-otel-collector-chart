@@ -21,7 +21,7 @@ jobs:
       - name: Update Chart
         id: update_chart
         run: |
-          DEP_PATH=$(yq e '.dependencies[] | select(.name == "${{ matrix.repo }}")' $CHART_YAML -j | jq -r '.version')
+          DEP_PATH=$(yq e '.dependencies[] | select(.name == \"${{ matrix.repo }}\")' $CHART_YAML -j | jq -r '.version')
           LATEST_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API"?q=${{ matrix.repo }}" | sed "s/{repo}/${{ matrix.repo }}/g") | jq -r .tag_name)
           echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
           echo "Current version of ${{ matrix.repo }} is $DEP_PATH, latest is $LATEST_VER"
