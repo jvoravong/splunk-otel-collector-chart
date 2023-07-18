@@ -31,7 +31,7 @@ jobs:
             echo 'Looks like we need to update...'
             echo Updating to new version in chart.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
-            yq e -i ".dependencies[] |= if .name == \"${{ matrix.dependency }}\" then .version = \"$LATEST_VER\" else . end" "$CHART_YAML"
+            yq e -i ".dependencies[] |= if .name == \"${{ matrix.dependency }}\" then .version = \"$LATEST_VER\" | @yaml else . end" $CHART_YAML
             echo "Current git diff:"
             git --no-pager diff
           fi
