@@ -27,23 +27,20 @@ jobs:
           echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
 
           # Retrieve the current version from chart.yaml
-          DEP_LINE=$(yq eval ".dependencies[].name" $CHART_YAML | grep -n "${{ matrix.repo }}" | cut -d ':' -f 1)
-          DEP_INDENT=$(yq eval ".dependencies[$DEP_LINE]" $CHART_YAML | awk '{ match($0, /(\s*)-/, a); print a[1] }')
-          DEP_ENTRY=$(yq eval ".dependencies[$DEP_LINE]" $CHART_YAML)
+          DEP_LINE=$(yq eval --printMode pv ".dependencies[].name" $CHART_YAML | awk "/${{ matrix.repo }}/ { print NR }")
+          DEP_PATH=$(yq eval --printMode pv ".dependencies[$DEP_LINE].version" $CHART_YAML)
 
-          echo "Current version of ${{ matrix.repo }} is $(yq eval "$DEP_ENTRY | .version" -)", "latest is $LATEST_VER"
+          echo "Current version of ${{ matrix.repo }} is $DEP_PATH, latest is $LATEST_VER"
 
-          if [ "$(yq eval "$DEP_ENTRY | .version" -)" == "$LATEST_VER" ]; then
+          if [ "$LATEST_VER" == "$DEP_PATH" ]; then
             echo We are already up to date. Nothing else to do.
           else
             echo 'Looks like we need to update...'
             echo Updating to new version in chart.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
 
-            # Update the version in chart.yaml
-            echo "$(yq eval "$DEP_ENTRY | .version = \"$LATEST_VER\"" -)" > temp_dep.yaml
-            sed -i "${DEP_LINE}r temp_dep.yaml" $CHART_YAML
-            rm temp_dep.yaml
+            # Update the version in chart.yaml using yq and jq
+            yq eval --inplace ".dependencies[$DEP_LINE].version = \"$LATEST_VER\"" $CHART_YAML
 
             echo "Current git diff:"
             git --no-pager diff
