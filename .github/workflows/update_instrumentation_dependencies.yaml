@@ -35,8 +35,12 @@ jobs:
             echo Updating to new version in values.yaml
             echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
             VLINE=$(grep -n "${REPO}" $VALUES_YAML | cut -f1 -d:)
+            echo "Line number for ${REPO} in ${VALUES_YAML} is: ${VLINE}"
             OLD_VER=$(sed -n "${VLINE}p" $VALUES_YAML | awk -F: '{print $2}' | awk -Fv '{print $2}' | tr -d ' ')
+            echo "Old version number is: ${OLD_VER}"
             NEW_VER=${LATEST_VER#v} # removes 'v' from the start of the string
+            echo "New version number is: ${NEW_VER}"
+            echo "sed: ${VLINE}s/${OLD_VER}/${NEW_VER}/"
             sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" $VALUES_YAML
             git --no-pager diff
           fi
