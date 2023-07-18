@@ -19,12 +19,12 @@ jobs:
         run: |
           # Fetch the latest version from the GitHub repository
           LATEST_TAG=$(curl -sL $REPO_URL/releases/latest | awk -F 'tag/' '{print $2}' | awk -F '"' '{print $1}')
-          LATEST_APP_VER=$(echo $LATEST_TAG | awk -F '.' '{print substr($1, 2)"."$2}')
+          LATEST_APP_VER=$(echo $LATEST_TAG | awk -F '.' '{print substr($1, 2) "." $2 "." $3}')
 
           # Retrieve the current version from chart.yaml
           CURRENT_VERSION=$(yq eval '.version' $CHART_YAML)
           CURRENT_APP_VERSION=$(yq eval '.appVersion' $CHART_YAML)
-
+          
           echo "Current version is $CURRENT_VERSION, latest appVersion is $LATEST_APP_VER"
 
           # Check if major or minor version update has occurred
