@@ -18,19 +18,25 @@ jobs:
         id: update_chart_version
         run: |
           # Fetch the latest version from the GitHub repository
-          LATEST_TAG=$(curl -sL $REPO_URL/releases/latest | awk -F 'tag/' '{print $2}' | awk -F '"' '{print $1}')
-          LATEST_APP_VER=$(echo $LATEST_TAG | awk -F '.' '{print substr($1, 2) "." $2 "." $3}')
+          LATEST_APP_TAG=$(curl -sL $REPO_URL/releases/latest | awk -F 'tag/' '{print $2}' | awk -F '"' '{print $1}')
+          LATEST_APP_VER=$(echo $LATEST_APP_TAG | awk -F '.' '{print substr($1, 2) "." $2 "." $3}')
 
           # Retrieve the current version from chart.yaml
-          CURRENT_VERSION=$(yq eval '.version' $CHART_YAML)
+          CURRENT_CHART_VERSION=$(yq eval '.version' $CHART_YAML)
           CURRENT_APP_VERSION=$(yq eval '.appVersion' $CHART_YAML)
-          
-          echo "Current version is $CURRENT_VERSION, latest appVersion is $LATEST_APP_VER"
+
+          echo "Current version is $CURRENT_APP_VERSION, latest appVersion is $LATEST_APP_VER"
+
+          # Split the current and latest app versions into three strings for validation
+          IFS='.' read -ra CURRENT_VERSION <<< "$CURRENT_APP_VERSION"
+          IFS='.' read -ra LATEST_VERSION <<< "$LATEST_APP_VER"
 
           # Check if major or minor version update has occurred
-          if [[ "$LATEST_APP_VER" != "$CURRENT_APP_VERSION" && ("$LATEST_APP_VER" == "$CURRENT_APP_VERSION"* || "$LATEST_APP_VER" == "$CURRENT_APP_VERSION."*) ]]; then
+          if [[ "${LATEST_VERSION[0]}" -gt "${CURRENT_VERSION[0]}" || ("${LATEST_VERSION[0]}" -eq "${CURRENT_VERSION[0]}" && "${LATEST_VERSION[1]}" -gt "${CURRENT_VERSION[1]}") ]]; then
             echo "Updating appVersion in Chart.yaml"
             echo "NEED_UPDATE=1" >> $GITHUB_ENV
+            # At this time we don't support auto patch releases, they are created manually.
+            yq eval ".version = \"${LATEST_VERSION[0]}.${LATEST_VERSION[1]}.0\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
             yq eval ".appVersion = \"$LATEST_APP_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
           else
             echo "No major or minor version update detected. Skipping the update."
