@@ -15,7 +15,7 @@ keywords:
 - apm
 maintainers:
 - name: dmitryax
-- name: jvoravongxxxxxxxxXXxxxx
+- name: jvoravongxxxxxxxxXXxxxxx
 - name: emaderer
 dependencies:
   # Subchart Notes:
