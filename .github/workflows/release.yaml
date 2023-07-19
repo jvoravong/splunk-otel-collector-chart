@@ -17,16 +17,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for Chart version update
-        id: version_changed
+      - name: Validate Chart.yaml Update
+        id: check_update_chart
         run: |
-          DIFF=$(git diff HEAD^ | grep -E "^\+version:")
-          echo "Version Update: $DIFF"
+          CHART_DIFF=$(git diff HEAD^ --name-only)
+          VERSION_DIFF=$(git diff HEAD^ -- Chart.yaml | grep -E "^\+version:")
+          if [[ "$CHART_DIFF" == "helm-charts/**/Chart.yaml" && "$VERSION_DIFF" != "" ]]; then
+            echo "::set-output name=VALID_UPDATE::true"
+          else
+            echo "::set-output name=VALID_UPDATE::false"
+          fi
 
   create_release:
     needs: check_release
     runs-on: ubuntu-latest
-    if: ${{ needs.check_release.outputs.VERSION_CHANGED == 'true' }}
+    if: ${{ needs.check_release.outputs.VALID_UPDATE == 'true' }}
     steps:
       - name: Configure Git
         run: git config user.name "$GITHUB_ACTOR" && git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
