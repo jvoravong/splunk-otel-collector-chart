@@ -19,7 +19,7 @@ jobs:
         run: |
           # Fetch the latest version from the GitHub repository
           LATEST_APP_TAG=$(curl -qs -H "Accept: application/vnd.github+json" $LATEST_API | jq -r .tag_name)
-          LATEST_APP_VER=${LATEST_VER#v} # removes 'v' from the start of the string
+          LATEST_APP_VER=${LATEST_APP_TAG#v} # removes 'v' from the start of the string
 
           # Retrieve the current version from Chart.yaml
           CURRENT_CHART_VERSION=$(yq eval '.version' $CHART_YAML)
