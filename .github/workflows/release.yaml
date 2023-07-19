@@ -4,31 +4,49 @@ on:
   push:
     branches:
       - main
-    # Release only on changes in Chart.yaml
+    # Release only if the 'version' field in Chart.yaml was updated
     paths:
       - helm-charts/**/Chart.yaml
+
+env:
+  CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Configure Git
+      - name: Check for Chart version update
+        id: version_changed
         run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          DIFF=$(git diff HEAD^ -- "$CHART_YAML" | grep -E "^\+version:")
+          if [ -z "$DIFF" ]; then
+            echo "VERSION_CHANGED=true >> "$GITHUB_OUTPUT"
+            echo "Creating new release"
+          else
+            echo "VERSION_CHANGED=false >> "$GITHUB_OUTPUT"
+            echo "No new release needed"
+          fi
+
+      - name: Configure Git
+        run: git config user.name "$GITHUB_ACTOR" && git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+        if: steps.version_changed.outputs.VERSION_CHANGED == 'true'
 
       - name: Install Helm
         uses: azure/setup-helm@v3.5
         with:
           version: v3.11.3
+        if: steps.version_changed.outputs.VERSION_CHANGED == 'true'
 
       - name: Set up chart dependencies
-        run: make repo-update dep-build
+        run: make render
+        if: steps.version_changed.outputs.VERSION_CHANGED == 'true'
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
@@ -36,3 +54,4 @@ jobs:
           charts_dir: helm-charts
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        if: steps.version_changed.outputs.VERSION_CHANGED == 'true'
