@@ -7,7 +7,7 @@ on:
 
 env:
   CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
-  REPO_URL: https://github.com/signalfx/splunk-otel-collector
+  REPO_URL: https://api.github.com/repos/signalfx/splunk-otel-collector/releases/latest
 
 jobs:
   auto_draft_release:
@@ -18,9 +18,9 @@ jobs:
         id: update_chart_version
         run: |
           # Fetch the latest version from the GitHub repository
-          LATEST_APP_VER=$(curl -sL $REPO_URL/tags | jq -r '.[0].name' | awk '{ print substr($0, 2) }')
+          LATEST_APP_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API | sed "s/{lang}/${{ matrix.language }}/g") | jq -r .tag_name)
 
-          # Retrieve the current version from chart.yaml
+          # Retrieve the current version from Chart.yaml
           CURRENT_CHART_VERSION=$(yq eval '.version' $CHART_YAML)
           CURRENT_APP_VERSION=$(yq eval '.appVersion' $CHART_YAML)
 
