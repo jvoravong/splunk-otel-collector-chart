@@ -20,14 +20,14 @@ jobs:
       - name: Check for Chart version update
         id: version_changed
         run: |
-          DIFF=$(git diff HEAD^ | grep -E "^\+version:")
-          echo "$DIFF"
-          if [ -z "$DIFF" ]; then
+          DIFF=$(git diff HEAD^ -- "Chart.yaml" | grep -E "^\+version:")
+          echo "Version Update: $DIFF"
+          if [[ -z "$DIFF" ]]; then
             echo "No new release needed"
-            echo "VERSION_CHANGED=false >> "$GITHUB_OUTPUT"
+            echo "VERSION_CHANGED=false" >> "$GITHUB_ENV"
           else
             echo "New release needed"
-            echo "VERSION_CHANGED=true" >> "$GITHUB_OUTPUT"
+            echo "VERSION_CHANGED=true" >> "$GITHUB_ENV"
           fi
 
       - name: Configure Git
