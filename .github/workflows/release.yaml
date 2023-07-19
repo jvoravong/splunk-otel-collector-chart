@@ -20,7 +20,7 @@ jobs:
       - name: Check for Chart version update
         id: version_changed
         run: |
-          DIFF=$(git diff HEAD^ -- "Chart.yaml" | grep -E "^\+version:")
+          DIFF=$(git diff HEAD^ -- "*Chart.yaml" | grep -E "^\+version:")
           echo "Version Update: $DIFF"
           if [[ -z "$DIFF" ]]; then
             echo "No new release needed"
