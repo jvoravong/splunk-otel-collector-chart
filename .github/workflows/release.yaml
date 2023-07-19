@@ -23,11 +23,15 @@ jobs:
         id: version_changed
         run: |
           CHART_PATH=$(find . -name Chart.yaml)
-          DIFF=$(git diff HEAD^ -- "$CHART_PATH")
-          echo "Determining if the line updated starts with "version" and a release needs to be made"
-          echo "Current git diff:"
+          DIFF=$(git diff --name-only HEAD^ "$CHART_PATH")
+          echo "Determining if the Chart version was updated and a release needs to be made"
+          echo "Current changes:"
           echo "${DIFF}"
-          echo "VERSION_CHANGED=${DIFF/+version*/true}" >> $GITHUB_OUTPUT
+          if [[ -n "$DIFF" ]]; then
+            echo "::set-output name=VERSION_CHANGED::true"
+          else
+            echo "::set-output name=VERSION_CHANGED::false"
+          fi
 
       - name: Configure Git
         run: git config user.name "$GITHUB_ACTOR" && git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
