@@ -4,31 +4,41 @@ on:
   push:
     branches:
       - main
-    # Release only on changes in Chart.yaml
+    # Release only if the 'version' field in Chart.yaml was updated
     paths:
       - helm-charts/**/Chart.yaml
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Configure Git
+      - name: Check for Chart version changes
+        id: version_changed
         run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          CHART_PATH=$(find . -name Chart.yaml)
+          DIFF=$(git diff HEAD^ -- "$CHART_PATH")
+          echo "::set-output name=version_changed::${DIFF/+- version*/true}"
+
+      - name: Configure Git
+        run: git config user.name "$GITHUB_ACTOR" && git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+        if: steps.version_changed.outputs.version_changed == 'true'
 
       - name: Install Helm
         uses: azure/setup-helm@v3.5
         with:
           version: v3.11.3
+        if: steps.version_changed.outputs.version_changed == 'true'
 
       - name: Set up chart dependencies
         run: make repo-update dep-build
+        if: steps.version_changed.outputs.version_changed == 'true'
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
@@ -36,3 +46,4 @@ jobs:
           charts_dir: helm-charts
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        if: steps.version_changed.outputs.version_changed == 'true'
