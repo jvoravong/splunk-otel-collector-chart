@@ -9,7 +9,7 @@ on:
       - helm-charts/splunk-otel-collector/Chart.yaml
 
 env:
-  # TODO: Find a way not to define this file path twice.
+  # TODO: Refactor so this file path isn't defined twice
   CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
 
 jobs:
