@@ -24,7 +24,7 @@ jobs:
         run: |
           CHART_PATH=$(find . -name Chart.yaml)
           DIFF=$(git diff HEAD^ -- "$CHART_PATH")
-          echo "::set-output name=version_changed::${DIFF/+- version*/true}"
+          echo "::set-output name=version_changed::${DIFF/+version*/true}"
 
       - name: Configure Git
         run: git config user.name "$GITHUB_ACTOR" && git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
