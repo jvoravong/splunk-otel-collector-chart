@@ -9,7 +9,7 @@ on:
       - helm-charts/**/Chart.yaml
 
 jobs:
-  release:
+  check_release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,29 +20,24 @@ jobs:
       - name: Check for Chart version update
         id: version_changed
         run: |
-          DIFF=$(git diff HEAD^ -- "*Chart.yaml" | grep -E "^\+version:")
+          DIFF=$(git diff HEAD^ | grep -E "^\+version:")
           echo "Version Update: $DIFF"
-          if [[ -z "$DIFF" ]]; then
-            echo "No new release needed"
-            echo "VERSION_CHANGED=false" >> "$GITHUB_ENV"
-          else
-            echo "New release needed"
-            echo "VERSION_CHANGED=true" >> "$GITHUB_ENV"
-          fi
 
+  create_release:
+    needs: check_release
+    runs-on: ubuntu-latest
+    if: ${{ needs.check_release.outputs.VERSION_CHANGED == 'true' }}
+    steps:
       - name: Configure Git
         run: git config user.name "$GITHUB_ACTOR" && git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-        if: steps.version_changed.outputs.VERSION_CHANGED == 'true'
 
       - name: Install Helm
         uses: azure/setup-helm@v3.5
         with:
           version: v3.11.3
-        if: steps.version_changed.outputs.VERSION_CHANGED == 'true'
 
       - name: Set up chart dependencies
         run: make render
-        if: steps.version_changed.outputs.VERSION_CHANGED == 'true'
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
@@ -50,4 +45,3 @@ jobs:
           charts_dir: helm-charts
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        if: steps.version_changed.outputs.VERSION_CHANGED == 'true'
