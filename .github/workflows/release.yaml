@@ -1,12 +1,12 @@
-name: Release Charts
+name: Release splunk-otel-collector chart
 
 on:
   push:
     branches:
       - main
-    # Release only if the 'version' field in Chart.yaml was updated
+    # Release only if the 'version' field in the splunk-otel-collector Chart.yaml was updated
     paths:
-      - helm-charts/**/Chart.yaml
+      - ${{ env.CHART_YAML }}
 
 env:
   CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
@@ -14,8 +14,6 @@ env:
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -25,13 +23,15 @@ jobs:
       - name: Check for Chart version update
         id: version_changed
         run: |
+          #
           DIFF=$(git diff HEAD^ -- "$CHART_YAML" | grep -E "^\+version:")
-          echo $DIFF
+          echo "$DIFF"
           if [ -z "$DIFF" ]; then
-            echo "VERSION_CHANGED=true >> "$GITHUB_OUTPUT"
-          else
             echo "No new release needed"
-            echo "VERSION_CHANGED=false >> "$GITHUB_OUTPUT"
+            echo "VERSION_CHANGED=false" >> $GITHUB_ENV
+          else
+            echo "New release needed"
+            echo "VERSION_CHANGED=true" >> $GITHUB_ENV
           fi
 
       - name: Configure Git
