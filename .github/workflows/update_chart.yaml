@@ -19,7 +19,7 @@ jobs:
         run: |
           # Fetch the latest version from the GitHub repository
           LATEST_APP_TAG=$(curl -sL $REPO_URL/releases/latest | awk -F 'tag/' '{print $2}' | awk -F '"' '{print " " $1}')
-          LATEST_APP_VER=$(curl -sL $REPO_URL/releases/latest | awk -F 'tag/' '{print $2}' | awk -F '"' '{print $1}' | awk '{print $NF}')
+          LATEST_APP_VER=$(echo $LATEST_APP_TAG | awk -F '.' '{print substr($1, 2) "." $2 "." $3}')
 
           # Retrieve the current version from Chart.yaml
           CURRENT_CHART_VERSION=$(yq eval '.version' $CHART_YAML)
