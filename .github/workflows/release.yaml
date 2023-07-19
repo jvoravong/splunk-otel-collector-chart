@@ -19,11 +19,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for Chart version changes
+      - name: Check for Chart version update
         id: version_changed
         run: |
           CHART_PATH=$(find . -name Chart.yaml)
           DIFF=$(git diff HEAD^ -- "$CHART_PATH")
+          echo "Determining if the line updated starts with "version" and a release needs to be made"
+          echo "Current git diff:"
+          echo "${DIFF}"
           echo "::set-output name=version_changed::${DIFF/+version*/true}"
 
       - name: Configure Git
