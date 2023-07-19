@@ -40,6 +40,15 @@ jobs:
             # At this time we don't support auto patch releases, they are created manually.
             yq eval ".version = \"${LATEST_VERSION[0]}.${LATEST_VERSION[1]}.0\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
             yq eval ".appVersion = \"$LATEST_APP_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
+
+            echo Updating rendered examples
+            make render
+
+            echo Updating CHANGELOG.md
+            make changelog-release
+
+            echo "Current git diff:"
+            git --no-pager diff
           else
             echo "No major or minor version update detected. Skipping the update."
           fi
