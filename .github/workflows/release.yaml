@@ -26,12 +26,12 @@ jobs:
         id: version_changed
         run: |
           DIFF=$(git diff HEAD^ -- "$CHART_YAML" | grep -E "^\+version:")
+          echo $DIFF
           if [ -z "$DIFF" ]; then
             echo "VERSION_CHANGED=true >> "$GITHUB_OUTPUT"
-            echo "Creating new release"
           else
-            echo "VERSION_CHANGED=false >> "$GITHUB_OUTPUT"
             echo "No new release needed"
+            echo "VERSION_CHANGED=false >> "$GITHUB_OUTPUT"
           fi
 
       - name: Configure Git
