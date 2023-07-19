@@ -18,7 +18,8 @@ jobs:
         id: update_chart_version
         run: |
           # Fetch the latest version from the GitHub repository
-          LATEST_APP_VER=$(curl -qs -H "Accept: application/vnd.github+json" $LATEST_API | jq -r .tag_name)
+          LATEST_APP_TAG=$(curl -qs -H "Accept: application/vnd.github+json" $LATEST_API | jq -r .tag_name)
+          LATEST_APP_VER=${LATEST_VER#v} # removes 'v' from the start of the string
 
           # Retrieve the current version from Chart.yaml
           CURRENT_CHART_VERSION=$(yq eval '.version' $CHART_YAML)
@@ -37,7 +38,6 @@ jobs:
           if [[ "${LATEST_VERSION[0]}" -gt "${CURRENT_VERSION[0]}" || ("${LATEST_VERSION[0]}" -eq "${CURRENT_VERSION[0]}" && "${LATEST_VERSION[1]}" -gt "${CURRENT_VERSION[1]}") ]]; then
             echo "Updating appVersion in Chart.yaml"
             echo "NEED_UPDATE=1" >> $GITHUB_ENV
-            # At this time we don't support auto patch releases, they are created manually.
             yq eval ".version = \"${LATEST_VERSION[0]}.${LATEST_VERSION[1]}.0\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
             yq eval ".appVersion = \"$LATEST_APP_VER\"" $CHART_YAML > temp_chart.yaml && mv temp_chart.yaml $CHART_YAML
 
