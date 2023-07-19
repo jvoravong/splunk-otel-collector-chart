@@ -29,7 +29,7 @@ dep-build:
 
 # Updates the CHANGELOG.md for a new release
 .PHONY: changelog-release
-changelog:
+changelog-release:
 	@{ \
 	VERSION=$$(yq eval '.version' helm-charts/splunk-otel-collector/Chart.yaml) ;\
   DATE=$$(date +%Y-%m-%d) ;\
