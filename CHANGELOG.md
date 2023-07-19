@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+## [v0.81.0] - 2023-07-19
+
 ### Fixed
 
 - Set cluster_name for host logs too if renameFieldsSck is enabled [#837](https://github.com/signalfx/splunk-otel-collector-chart/pull/837)
