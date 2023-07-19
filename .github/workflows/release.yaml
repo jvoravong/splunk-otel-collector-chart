@@ -28,10 +28,10 @@ jobs:
           echo "$DIFF"
           if [ -z "$DIFF" ]; then
             echo "No new release needed"
-            echo "VERSION_CHANGED=false" >> $GITHUB_ENV
+            echo "VERSION_CHANGED=false >> "$GITHUB_OUTPUT"
           else
             echo "New release needed"
-            echo "VERSION_CHANGED=true" >> $GITHUB_ENV
+            echo "VERSION_CHANGED=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Configure Git
