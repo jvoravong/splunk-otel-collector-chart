@@ -1,5 +1,8 @@
 name: Release splunk-otel-collector chart
 
+env:
+  CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
+
 on:
   push:
     branches:
@@ -7,9 +10,6 @@ on:
     # Release only if the 'version' field in the splunk-otel-collector Chart.yaml was updated
     paths:
       - ${{ env.CHART_YAML }}
-
-env:
-  CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
 
 jobs:
   release:
