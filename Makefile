@@ -33,5 +33,5 @@ changelog-release:
 	@{ \
 	VERSION=$$(yq eval '.version' helm-charts/splunk-otel-collector/Chart.yaml) ;\
   DATE=$$(date +%Y-%m-%d) ;\
-  sed -i '' "s/## Unreleased/## Unreleased\n\n## [v$$VERSION] - $$DATE/g" ./CHANGELOG.md ;\
+  sed -i '' "s/## Unreleased/## Unreleased\n\n## [v$$VERSION] - $$DATE/g" CHANGELOG.md ;\
 	}
