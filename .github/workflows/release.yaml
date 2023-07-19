@@ -1,16 +1,12 @@
-name: Release splunk-otel-collector chart
+name: Release Charts
 
 on:
   push:
     branches:
       - main
-    # Release only if the 'version' field in the splunk-otel-collector Chart.yaml was updated
+    # Release only if the 'version' field in Chart.yaml was updated
     paths:
       - helm-charts/**/Chart.yaml
-
-# TODO: Refactor so this file path isn't defined twice
-env:
-  CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
 
 jobs:
   release:
@@ -24,7 +20,7 @@ jobs:
       - name: Check for Chart version update
         id: version_changed
         run: |
-          DIFF=$(git diff HEAD^ -- "Chart.yaml" | grep -E "^\+version:")
+        DIFF=$(git diff --diff-filter=d --name-only HEAD^ | grep -E "^.*/Chart\.yaml$" | xargs git diff HEAD^ -- | grep -E "^\+version:")
           echo "$DIFF"
           if [ -z "$DIFF" ]; then
             echo "No new release needed"
