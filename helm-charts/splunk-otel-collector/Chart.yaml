@@ -8,14 +8,14 @@ type: application
 keywords:
 - splunk
 - opentelemetry
-- observabilityxxx
+- observabilityxxxx
 - logs
 - traces
 - metrics
 - apm
 maintainers:
 - name: dmitryax
-- name: jvoravongxxxxxxxxXXxxxxxxxxxxxx
+- name: jvoravongxxxxxxxxXXxxxxxxxxxxxxX
 - name: emaderer
 dependencies:
   # Subchart Notes:
