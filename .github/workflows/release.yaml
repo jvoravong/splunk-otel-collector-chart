@@ -20,17 +20,16 @@ jobs:
       - name: Validate Chart.yaml Update
         id: check_update_chart
         run: |
-          CHART_DIFF=$(git diff HEAD^ --name-only | grep Chart.yaml)
-          VERSION_DIFF=$(git diff HEAD^ -- "*Chart.yaml" | grep -E "^\+version:")
-          echo "VERSION_DIFF="$VERSION_DIFF  # example value: +version: 0.80.1
-          if [[ ! -z "$CHART_DIFF" && ! -z "$VERSION_DIFF" ]]; then
+          VERSION_DIFF=$(git diff HEAD^ -- "*Chart.yaml" | grep -E "^\+version:" || echo "")
+          echo "VERSION_DIFF=$VERSION_DIFF"  # example value: +version: 0.80.1
+          if [[ ! -z "$VERSION_DIFF" ]]; then
             echo "New release needed, creating..."
             echo "VALID_UPDATE=1" >> $GITHUB_OUTPUT
           else
             echo "No new release needed"
             echo "VALID_UPDATE=0" >> $GITHUB_OUTPUT
           fi
-
+          exit 0
 
       - name: Configure Git
         run: git config user.name "$GITHUB_ACTOR" && git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
