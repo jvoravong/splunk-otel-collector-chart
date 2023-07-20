@@ -23,3 +23,11 @@ dep-build:
 	if ! helm dependencies list $$DIR | grep jetstack | grep -q ok ; then OK=false ; fi ;\
 	if ! $$OK ; then helm dependencies build $$DIR ; fi ;\
 	}
+
+.PHONY: generate-component-csv
+generate-component-csv:
+	bash ci_scripts/generate-component-csv.sh
+
+.PHONY: generate-changelog-release
+generate-changelog-release: generate-component-csv
+	bash ./ci_scripts/generate-changelog-release.sh

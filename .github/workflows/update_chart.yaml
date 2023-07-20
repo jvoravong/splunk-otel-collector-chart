@@ -48,7 +48,7 @@ jobs:
             make render
 
             echo Updating CHANGELOG.md
-            make changelog-release
+            make generate-changelog-release
 
             echo "Current git diff:"
             git --no-pager diff
