@@ -4,6 +4,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+## [v0.81.0] - 2023-07-20
+
+This Splunk OpenTelemetry Collector Chart for Kubernetes release adopts the following components
+
+- Splunk OpenTelemetry Collector Chart - [0.81.0](https://github.com/signalfx/splunk-otel-collector-chart/releases/tag/splunk-otel-collector-0.81.0)
+- Splunk OpenTelemetry Collector App Version - [0.81.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.81.0)
+- Splunk Network Explorer - [latest-v0.9](https://quay.io/repository/signalfx/splunk-network-explorer-kernel-collector?tab=tags)
+- cert-manager chart - [1.12.2](https://charts.jetstack.io)
+- opentelemetry-operator chart - [0.32.0](https://open-telemetry.github.io/opentelemetry-helm-charts)
+
 ### Fixed
 
 - Set cluster_name for host logs too if renameFieldsSck is enabled [#837](https://github.com/signalfx/splunk-otel-collector-chart/pull/837)
