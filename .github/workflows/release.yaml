@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - main
-    # Release only on changes in Chart.yaml
+    # Release only if the 'version' field in Chart.yaml was updated
     paths:
       - helm-charts/**/Chart.yaml
 
 jobs:
-  release:
+  maybe_update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,10 +17,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure Git
+      - name: Validate Chart.yaml Update
+        id: check_update_chart
         run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          CHART_DIFF=$(git diff HEAD^ --name-only)
+           # VERSION_DIFF sample expected value: +version: 0.80.1
+          VERSION_DIFF=$(git diff HEAD^ -- "*Chart.yaml" | grep -E "^\+version:")
+          if [[ "$CHART_DIFF" == "helm-charts/**/Chart.yaml" && "$VERSION_DIFF" != "" ]]; then
+            echo "No new release needed"
+            echo "VALID_UPDATE=true" >> $GITHUB_OUTPUT
+          else
+            echo "New release needed, creating..."
+            echo "VALID_UPDATE=false" >> $GITHUB_OUTPUT
+          fi
+
+  create_release:
+    needs: maybe_update
+    runs-on: ubuntu-latest
+    if: ${{ needs.maybe_update.outputs.VALID_UPDATE == 'true' }}
+    steps:
+      - name: Configure Git
+        run: git config user.name "$GITHUB_ACTOR" && git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Install Helm
         uses: azure/setup-helm@v3.5
@@ -28,7 +45,7 @@ jobs:
           version: v3.11.3
 
       - name: Set up chart dependencies
-        run: make repo-update dep-build
+        run: make render
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
