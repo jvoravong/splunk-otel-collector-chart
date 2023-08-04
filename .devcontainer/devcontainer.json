@@ -1,0 +1,41 @@
+{
+  "name": "Helm Chart Development",
+  "dockerFile": "Dockerfile",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "enableNonRootDocker": "true",
+      "moby": "true"
+    },
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest",
+      "minikube": "latest"
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {},
+    "ghcr.io/meaningful-ooo/devcontainer-features/homebrew:2": {},
+    "ghcr.io/mpriscella/features/kind:1": {},
+    "ghcr.io/devcontainers-contrib/features/poetry:1": {},
+    "ghcr.io/devcontainers-contrib/features/pre-commit:1": {},
+    "ghcr.io/devcontainers-contrib/features/pylint:1": {},
+    "ghcr.io/stuartleeks/dev-container-features/shell-history:0": {},
+    "ghcr.io/guiyomh/features/vim:0": {},
+    "ghcr.io/rio/features/kustomize:1": {}
+  },
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/zsh"
+  },
+  "extensions": [
+	"ms-kubernetes-tools.vscode-kubernetes-tools",
+	"ms-azuretools.vscode-docker"
+],
+  "forwardPorts": [8080],
+  "postCreateCommand": "echo 'Devcontainer is ready!'",
+  "env": {
+    "REPO_URLS": "https://github.com/jvoravong/splunk-otel-collector.git"
+  }
+}

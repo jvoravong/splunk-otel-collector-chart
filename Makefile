@@ -156,3 +156,17 @@ update-chart-dep: dep-update ## Updates the dependency version in the Chart.yaml
 		exit 1; \
 	fi
 	ci_scripts/update-chart-dependency.sh $(CHART_PATH) $(SUBCHART_NAME) $(DEBUG_MODE)
+
+##@ Developer Setup
+# Tasks for using shared developer tools
+DEV_CONTAINER_ORG = jvsplk # TODO: Add this to the main github repo or quay
+DEV_CONTAINER_IMAGE_NAME = splunk-otel-collector-chart-dev-container
+DEV_CONTAINER_IMAGE_TAG = latest
+
+.PHONY: docker-devcontainer-build
+docker-devcontainer-build: ## Builds the project devcontainer.
+	docker build -t $(DEV_CONTAINER_ORG)/$(DEV_CONTAINER_IMAGE_NAME):$(DEV_CONTAINER_IMAGE_TAG) .devcontainer
+
+.PHONY: docker-devcontainer-push
+docker-devcontainer-push: ## Pushs the project devcontainer.
+	docker push $(DEV_CONTAINER_ORG)/$(DEV_CONTAINER_IMAGE_NAME):$(DEV_CONTAINER_IMAGE_TAG)
