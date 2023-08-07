@@ -414,7 +414,6 @@ compatibility with the old config group name: "otelK8sClusterReceiver".
 {{- end }}
 {{- end -}}
 
-
 {{/*
 Whether object collection by k8s object receiver is enabled
 */}}
@@ -431,7 +430,6 @@ Whether object collection by k8s object receiver or/and event collection by k8s 
 {{- or $clusterReceiver.eventsEnabled (eq (include "splunk-otel-collector.objectsEnabled" .) "true") -}}
 {{- end -}}
 
-
 {{/*
 Whether clusterReceiver should be enabled
 */}}
@@ -439,7 +437,6 @@ Whether clusterReceiver should be enabled
 {{- $clusterReceiver := fromYaml (include "splunk-otel-collector.clusterReceiver" .) }}
 {{- and $clusterReceiver.enabled (or (eq (include "splunk-otel-collector.metricsEnabled" .) "true") (eq (include "splunk-otel-collector.objectsOrEventsEnabled" .) "true")) -}}
 {{- end -}}
-
 
 {{/*
 Build the securityContext for Linux and Windows
@@ -460,3 +457,30 @@ Build the securityContext for Linux and Windows
 {{- end }}
 {{- toYaml .securityContext }}
 {{- end -}}
+
+{{/*
+Build the service accounts for the collector and validation hook pods
+- .values.extraAnnotations: Used for internal chart logic to set extra annotations
+- .context.Values.serviceAccount.annotations: A convenient way to pass user-defined annotations
+*/}}
+{{- define "splunk-otel-collector.serviceAccountTemplate" -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "splunk-otel-collector.serviceAccountName" .context }}{{ .values.nameSuffix }}
+  labels:
+    {{- include "splunk-otel-collector.commonLabels" .context | nindent 4 }}
+    app: {{ template "splunk-otel-collector.name" .context }}
+    chart: {{ template "splunk-otel-collector.chart" .context }}
+    release: {{ .context.Release.Name }}
+    heritage: {{ .context.Release.Service }}
+  {{- if or .values.extraAnnotations .context.Values.serviceAccount.annotations }}
+  annotations:
+    {{- with .values.extraAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .context.Values.serviceAccount.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end }}
