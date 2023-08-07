@@ -17,8 +17,8 @@
       "version": "3.11"
     },
     "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {},
-    "ghcr.io/meaningful-ooo/devcontainer-features/homebrew:2": {},
     "ghcr.io/mpriscella/features/kind:1": {},
+    "ghcr.io/devcontainers-contrib/features/bandit:1": {},
     "ghcr.io/devcontainers-contrib/features/poetry:1": {},
     "ghcr.io/devcontainers-contrib/features/pre-commit:1": {},
     "ghcr.io/devcontainers-contrib/features/pylint:1": {},
