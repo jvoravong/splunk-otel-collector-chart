@@ -460,3 +460,28 @@ Build the securityContext for Linux and Windows
 {{- end }}
 {{- toYaml .securityContext }}
 {{- end -}}
+
+
+{{/*
+Build the service accounts for the collector and validation hook pods
+*/}}
+{{- define "splunk-otel-collector.serviceAccountTemplate" -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "splunk-otel-collector.serviceAccountName" .context }}{{ .values.nameSuffix }}
+  labels:
+    {{- include "splunk-otel-collector.commonLabels" .context | nindent 4 }}
+    app: {{ template "splunk-otel-collector.name" .context }}
+    chart: {{ template "splunk-otel-collector.chart" .context }}
+    release: {{ .context.Release.Name }}
+    heritage: {{ .context.Release.Service }}
+  {{- with .values.extraAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .context.Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
