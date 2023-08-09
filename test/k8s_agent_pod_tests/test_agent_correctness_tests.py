@@ -194,3 +194,49 @@ def test_no_agent_logs_ingested_into_splunk_with_exclude_agent_logs_flag(setup):
     )
     logger.info("Splunk received %s events in the 5 minutes", len(events))
     assert len(events) == 0  # ensure that we are not getting any logs
+
+SECRET_YAML = "config_yaml_files/secret-custom.yaml"
+
+def test_images_pulled_from_private_registry(setup):
+  """
+  Test that images are properly pulled from the private registry.
+  """
+  logger.info("Testing that images are properly pulled from the private registry.")
+
+  # 1. Set up the private registry (assuming you already have the method from the previous code)
+  install_helm_chart()
+
+  # 2. Modify Helm values to point to the private registry
+  yaml_file = AGENT_VALUES_YAML
+  with open(yaml_file, "r") as file:
+    data = yaml.safe_load(file)
+
+  # Assuming you have an image field in your Helm values that looks like:
+  # image:
+  #   repository: some-repo
+  #   tag: some-tag
+  data["image"]["repository"] = "private-image-registry.my-namespace.svc.cluster.local:5000/my-private-image"
+  data["image"]["tag"] = "latest"
+
+  new_yaml = "use_private_registry.yaml"
+  with open(new_yaml, "w") as file:
+    yaml.safe_dump(data, file)
+
+  # 3. Deploy the chart
+  k8s_helper.upgrade_helm(new_yaml, {})
+
+  time.sleep(10)  # wait for pods to potentially start
+
+  # 4. Verify the pod is running
+  pod_name = k8s_helper.get_pod_full_name("agent")
+  exit_code = os.system(f"kubectl get pods {pod_name} | grep Running")
+
+  # Fetching logs of the pod for diagnosis (in case of failures)
+  if exit_code != 0:
+    logger.error(f"Pod {pod_name} did not start. Checking logs for root cause...")
+    os.system(f"kubectl logs {pod_name}")
+
+  assert exit_code == 0, f"Pod {pod_name} did not start as expected."
+
+  # Cleanup: (optional)
+  # delete_helm_chart()

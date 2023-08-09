@@ -101,3 +101,38 @@ def wait_for_pods_initialization():
         if counter == len(lines) - 1:
             break
     time.sleep(5)  # wait for ingesting logs into splunk after connector is ready
+
+def install_private_registry_chart():
+  """Install a private registry helm chart and validate the  is running."""
+
+  logger.info("Installing private Docker registry in Kubernetes...")
+  os.system("helm repo add twuni https://helm.twun.io")
+  os.system("helm repo update")
+  os.system("helm install private-image-registry twuni/docker-registry")
+
+  # Validate the registry is running
+  start_time = time.time()
+  while time.time() - start_time < 120:  # 2 minutes timeout
+    exit_code = os.system("kubectl get pods | grep private-image-registry | grep Running")
+
+    # If the exit code is 0, the command was successful and the pod is running
+    if exit_code == 0:
+      logger.info("Private image registry is running!")
+      return
+    else:
+      logger.info("Waiting for private image registry to be in Running state...")
+      time.sleep(5)  # wait for 10 seconds before checking again
+
+  # If we're here, it means the pod did not start running in 2 minutes.
+  logger.error("Timed out waiting for the private image registry to run. Checking logs for root cause...")
+
+  # Fetching logs of the pod for diagnosis
+  os.system("kubectl logs -l app=private-image-registry")
+
+
+def delete_private_registry_chart():
+  """Delete the helm chart."""
+
+  logger.info("Deleting the private Docker registry Helm release...")
+  os.system("helm uninstall private-image-registry")
+  logger.info("Helm release for private image registry deleted successfully.")
