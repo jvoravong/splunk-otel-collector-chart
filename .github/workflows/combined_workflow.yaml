@@ -1,0 +1,287 @@
+name: Check for new chart dependency updates - combined
+
+on:
+  schedule:
+    # Run every Monday at noon.
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Helm
+        uses: azure/setup-helm@v3.5
+        with:
+          version: v3.11.3
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.0
+
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Helm
+        uses: azure/setup-helm@v3.5
+        with:
+          version: v3.11.3
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.4.0
+        with:
+          version: v3.7.1
+      - name: Set up chart dependencies
+        run: make repo-update dep-build
+      - name: Run chart-testing (list-changed)
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --config=ct.yaml)
+          if [[ -n "$changed" ]]; then
+            echo "::set-output name=changed::true"
+          fi
+      - name: Run chart-testing (lint)
+        run: ct lint --config=ct.yaml
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.8.0
+        # Only build a kind cluster if there are chart changes to test.
+        if: steps.list-changed.outputs.changed == 'true'
+      - name: Run chart-testing (install)
+        run: ct install --config=ct.yaml
+
+  validate-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Lint changelog file
+        uses: avto-dev/markdown-lint@v1
+        with:
+          rules: /lint/rules/changelog.js
+          config: /lint/config/changelog.yml
+          args: ./CHANGELOG.md
+      - name: Read current version of the Chart
+        id: read-chart
+        uses: cumulusds/get-yaml-paths-action@v1
+        with:
+          file: helm-charts/splunk-otel-collector/Chart.yaml
+          version: version
+      - name: Ensure that CHANGELOG.md has an entry for the current version
+        id: read-changelog
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ steps.read-chart.outputs.version }}
+          path: ./CHANGELOG.md
+
+  maybe_update_chart:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Currently this worfklow will update the listed dependencies in the Chart.yaml
+        repo: ['cert-manager', 'opentelemetry-operator'] # Add other repos here
+    steps:
+      - uses: actions/checkout@v3.5.3
+      - name: Update Chart
+        id: update_chart
+        run: |
+          # Run make repo-update to ensure repositories are up-to-date
+          make repo-update
+
+          # Fetch the latest version using helm search repo
+          LATEST_VER=$(helm search repo ${{ matrix.repo }} --versions | awk 'NR==2{print $2}')
+          echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
+
+          # Retrieve the current version from chart.yaml
+          DEP_PATH=$(yq eval ".dependencies[] | select(.name == \"${{ matrix.repo }}\") | .version" $CHART_YAML)
+
+          echo "Current version of ${{ matrix.repo }} is $DEP_PATH, latest is $LATEST_VER"
+
+          if [ "$LATEST_VER" == "$DEP_PATH" ]; then
+            echo We are already up to date. Nothing else to do.
+          else
+            echo 'Looks like we need to update...'
+            echo Updating to new version in chart.yaml
+            echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
+
+            # Update the version in chart.yaml using yq and jq
+            DEP_LINE=$(yq eval ".dependencies | keys | map(tonumber) | map(select(. != null)) | map(select(. < 10000)) | map(. + 1)" $CHART_YAML | jq ".[] | select(.[\"name\"] == \"${{ matrix.repo }}\")")
+            sed -i "${DEP_LINE}s/$DEP_PATH/$LATEST_VER/" $CHART_YAML
+
+            echo Updating rendered examples
+            make render
+
+            echo "Current git diff:"
+            git --no-pager diff
+          fi
+      - name: PR the new version
+        if: ${{ steps.update_chart.outputs.NEED_UPDATE == 1 }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: Update ${{ matrix.repo }} chart version
+          title: Update ${{ matrix.repo }} chart version to ${{ steps.update_chart.outputs.LATEST_VER }}
+          body: Use the new version of the ${{ matrix.repo }} chart
+          branch: "update-${{ matrix.repo }}-${{ steps.update_chart.outputs.LATEST_VER }}"
+          base: main
+          delete-branch: true
+          modify-outputs: false
+
+  maybe_update_instrumentation:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Currently this workflow will update the listed operator instrumentation dependencies in values.yaml
+        language: ['java'] # Add other languages here
+    steps:
+      - uses: actions/checkout@v3.5.3
+      - name: swizzle version
+        id: swizzle_version
+        run: |
+          REPO=ghcr.io/signalfx/splunk-otel-${{ matrix.language }}/splunk-otel-${{ matrix.language }}
+          LOCAL_VER=$(grep $REPO $VALUES_YAML | awk -F: '{print $2}' | tr -d ' "')
+          LATEST_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API | sed "s/{lang}/${{ matrix.language }}/g") | jq -r .tag_name)
+          echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
+          echo "Current version of ${{ matrix.language }} is $LOCAL_VER, latest is $LATEST_VER"
+
+          if [ "$LATEST_VER" == "$LOCAL_VER" ]; then
+            echo We are already up to date. Nothing else to do.
+          else
+            echo 'Verifying that the image is pullable...'
+            echo '(If this fails, the image version is out of sync with ghcr version)'
+            docker pull $REPO:$LATEST_VER
+            echo 'Looks like we are good to update...'
+            echo Updating to new version in values.yaml
+            echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
+            VLINE=$(grep -n "${REPO}" $VALUES_YAML | cut -f1 -d:)
+            echo "Line number for ${REPO} in ${VALUES_YAML} is: ${VLINE}"
+            OLD_VER=$(sed -n "${VLINE}p" $VALUES_YAML | grep -oP 'v\K[0-9.]+')
+            echo "Old version number is: ${OLD_VER}"
+            NEW_VER=${LATEST_VER#v} # removes 'v' from the start of the string
+            echo "New version number is: ${NEW_VER}"
+            echo "sed: ${VLINE}s/${OLD_VER}/${NEW_VER}/"
+            sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" $VALUES_YAML
+
+            echo Render chart template
+            make render
+
+            echo "Current git diff:"
+            git --no-pager diff
+          fi
+      - name: PR the new version
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: Update ${{ matrix.language }} instrumentation version
+          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
+          body: Use the new version of the ${{ matrix.language }} instrumentation
+          branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
+          base: main
+          delete-branch: true
+          modify-outputs: false
+
+  e2e-test:
+    name: ${{ matrix.container_runtime }}
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        container_runtime:
+          - "docker"
+          - "containerd"
+          - "cri-o"
+    env:
+      CI_SPLUNK_PORT: 8089
+      CI_SPLUNK_USERNAME: admin
+      CI_SPLUNK_HEC_TOKEN: a6b5e77f-d5f6-415a-bd43-930cecb12959
+      CI_SPLUNK_PASSWORD: helloworld
+      CI_INDEX_EVENTS: ci_events
+      CI_INDEX_METRICS: ci_metrics
+      CONTAINER_RUNTIME: ${{ matrix.container_runtime }}
+      KUBERNETES_VERSION: v1.21.2
+      MINIKUBE_VERSION: v1.22.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        #      # Leave this here for debugging
+        #      - name: Setup upterm session
+        #        uses: lhotari/action-upterm@v1
+      - name: Setup Minikube
+        run: |
+          # Install Kubectl
+          curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          mkdir -p ${HOME}/.kube
+          touch ${HOME}/.kube/config
+          # Install Minikube
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/
+          sudo sysctl fs.protected_regular=0
+          # Start Minikube and Wait
+          minikube start --container-runtime=${CONTAINER_RUNTIME} --cpus 2 --memory 4096 --kubernetes-version=${KUBERNETES_VERSION} --no-vtx-check
+          kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
+          export JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'
+          until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do
+            sleep 1;
+          done
+      - name: Install Splunk
+        run: |
+          # Wait until default service account is created
+          until kubectl -n default get serviceaccount default -o name; do
+            sleep 1;
+          done
+          # Install Splunk on minikube
+          kubectl apply -f ci_scripts/k8s-splunk.yml
+          # Wait until splunk is ready
+          until kubectl logs splunk --tail=2 | grep -q 'Ansible playbook complete'; do
+            sleep 1;
+          done
+          export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
+          # Setup Indexes
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=$CI_INDEX_EVENTS -d datatype=event
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=ns-anno -d datatype=event
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=pod-anno -d datatype=event
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=$CI_INDEX_METRICS -d datatype=metric
+          # Enable HEC services
+          curl -X POST -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD -k https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/servicesNS/nobody/splunk_httpinput/data/inputs/http/http/enable
+          # Create new HEC token
+          curl -X POST -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD -k -d "name=splunk_hec_token&token=a6b5e77f-d5f6-415a-bd43-930cecb12959&disabled=0&index=main&indexes=main,ci_events,ci_metrics,ns-anno,pod-anno" https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/servicesNS/nobody/splunk_httpinput/data/inputs/http
+          # Restart Splunk
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/server/control/restart -X POST
+      - name: Deploy sck otel collector
+        run: |
+          make repo-update dep-build
+          export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
+          ci_scripts/deploy_collector.sh
+      - name: Deploy log generator
+        run: |
+          kubectl apply -f test/test_setup.yaml
+          sleep 60
+          kubectl get pods --all-namespaces
+          kubectl logs -l component=agent-collector
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Run functional tests
+        run: |
+          kubectl get nodes
+          export PYTHONWARNINGS="ignore:Unverified HTTPS request"
+          export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
+          cd test
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Running functional tests....."
+          python -m pytest \
+          	--splunkd-url https://$CI_SPLUNK_HOST:8089 \
+          	--splunk-user admin \
+          	--splunk-password $CI_SPLUNK_PASSWORD \
+          	-p no:warnings -s
+

@@ -10,7 +10,7 @@ env:
   CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
 
 jobs:
-  maybe_update:
+  maybe_update_chart:
     runs-on: ubuntu-latest
     strategy:
       matrix:

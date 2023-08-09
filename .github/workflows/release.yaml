@@ -9,7 +9,7 @@ on:
       - helm-charts/**/Chart.yaml
 
 jobs:
-  maybe_update:
+  maybe_update_release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
