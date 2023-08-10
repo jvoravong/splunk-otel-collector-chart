@@ -4,8 +4,6 @@ set -e
 make repo-update dep-build
 export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
 
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-
 #Make sure to check and clean previously failed deployment
 echo "Checking if previous deployment exist..."
 if [ "`helm ls --short`" == "" ]; then
