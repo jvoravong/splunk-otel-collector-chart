@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 kubectl apply -f test/test_setup.yaml
 sleep 60

@@ -7,6 +7,30 @@ LOCALBIN ?= $(shell pwd)/bin
 KUBE_VERSION ?= 1.27
 KIND_CONFIG ?= test/kind-$(KUBE_VERSION).yaml
 
+# Splunk configuration for CI environment.
+# Port for the Splunk instance.
+export CI_SPLUNK_PORT=${CI_SPLUNK_PORT:-8089}
+# Username for Splunk authentication.
+export CI_SPLUNK_USERNAME=${CI_SPLUNK_USERNAME:-admin}
+# Splunk HTTP Event Collector (HEC) token.
+export CI_SPLUNK_HEC_TOKEN=${CI_SPLUNK_HEC_TOKEN:-a6b5e77f-d5f6-415a-bd43-930cecb12959}
+# Password for Splunk authentication.
+export CI_SPLUNK_PASSWORD=${CI_SPLUNK_PASSWORD:-helloworld}
+# Splunk index for CI events.
+export CI_INDEX_EVENTS=${CI_INDEX_EVENTS:-ci_events}
+# Splunk index for CI metrics.
+export CI_INDEX_METRICS=${CI_INDEX_METRICS:-ci_metrics}
+
+# Configuration for container runtime and Kubernetes.
+# Specifies the container runtime used in the CI environment.
+export CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-docker}
+# Version of Kubernetes to be used.
+export KUBERNETES_VERSION=${KUBERNETES_VERSION:-v1.21.2}
+# Version of Minikube to be used.
+export MINIKUBE_VERSION=${MINIKUBE_VERSION:-v1.22.0}
+# Host URL for the Splunk service within Kubernetes.
+export CI_SPLUNK_HOST=${CI_SPLUNK_HOST:-splunk-service.default.svc.cluster.local}
+
 # Default help target
 .DEFAULT_GOAL := help
 
@@ -61,9 +85,7 @@ e2e: ## Run end-to-tests
 .PHONY: prepare-e2e
 prepare-e2e: render start-kind ## Prepare end-to-end tests, deploys Deploy this chart and Splunk Platform (https://hub.docker.com/r/splunk/splunk/)
 	@{ \
-  source ci_scripts/.env ;\
   bash ci_scripts/deploy_chart_target_splunk_platform.sh ;\
-  bash ci_scripts/deploy_splunk.sh ;\
 	}
 
 .PHONY: clean-e2e

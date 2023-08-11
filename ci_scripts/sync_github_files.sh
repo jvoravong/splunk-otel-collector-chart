@@ -19,7 +19,7 @@ download_from_github() {
     mkdir -p "$dest_dir"
 
     # Download the file
-    curl -s "$raw_url" > "${dest_dir}/${file_name}"
+    curl -sL "$raw_url" > "${dest_dir}/${file_name}"
 
     # Add the comment at the top
     echo "# This file is managed automatically. Sourced from: $repo_url" | cat - "${dest_dir}/${file_name}" > temp && mv temp "${dest_dir}/${file_name}"
@@ -36,7 +36,7 @@ download_from_github "https://github.com/open-telemetry/opentelemetry-operator/b
 # For the wildcard case, we need to list the files from the repo and then download each.
 # This is a bit more involved since GitHub doesn't provide a direct way to list files with a wildcard.
 # Ideally, you'd use the GitHub API for this, but for simplicity, I'm demonstrating a naive approach here.
-urls=$(curl -s "https://github.com/open-telemetry/opentelemetry-operator/tree/main/" | grep 'kind-.*\.yaml' | sed 's/.*href="\([^"]*\)".*/\1/' | sed 's/^/https:\/\/github.com/')
+urls=$(curl -sL "https://github.com/open-telemetry/opentelemetry-operator/tree/main/" | grep 'kind-.*\.yaml' | sed 's/.*href="\([^"]*\)".*/\1/' | sed 's/^/https:\/\/github.com/')
 
 for url in $urls; do
     download_from_github "$url" "${2:-./test}"
