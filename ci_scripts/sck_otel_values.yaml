@@ -29,7 +29,7 @@ splunkPlatform:
   logsEnabled: true
   metricsEnabled: true
 
-logsEngine: otel
+logsEngine: fluentd
 
 clusterName: "functional-test"
 
