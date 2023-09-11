@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
+- Add ability to update and track operator auto-instrumentation images [#917](https://github.com/signalfx/splunk-otel-collector-chart/pull/917)
+  [BREAKING CHANGE] Refactored auto-instrumentation image definition from operator.instrumentation.spec.{library}.image to operator.instrumentation.spec.{library}.repository and operator.instrumentation.spec.{library}.tag.
+
 ## [0.84.0] - 2023-09-11
 
 ### Changed
