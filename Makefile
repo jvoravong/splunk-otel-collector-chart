@@ -118,7 +118,5 @@ chlog-update: chlog-available ## Updates the CHANGELOG.md file for a release. Ex
 	# Convert the version to the desired format
 	@FORMATTED_VERSION="[$(VERSION)] - $$(date +'%Y-%m-%d')"; \
 	$(CHLOGGEN) update --version $$FORMATTED_VERSION
-	# Update PR numbers to hyperlinks in CHANGELOG.md
-	@sed -i -E 's/\(#([0-9, ]+)\)/([#]\1\(https:\/\/github.com\/signalfx\/splunk-otel-collector-chart\/pull\/\1\))/g' CHANGELOG.md
-
-
+	# Update non-hyperlinked PR IDs in CHANGELOG.md
+	@./ci_scripts/update_changelog_links.sh
