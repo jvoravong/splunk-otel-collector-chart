@@ -105,17 +105,20 @@ chlog-validate: chlog-available ## Validates all YAML files in .chloggen
 
 .PHONY: chlog-preview
 chlog-preview: chlog-available ## Provide a preview of the generated CHANGELOG.md file for a release
+	# Note: Issues will not be hyperlinked in the preview but will be when the actual update happens.
 	$(CHLOGGEN) update --dry
 
 .PHONY: chlog-update
 chlog-update: chlog-available ## Updates the CHANGELOG.md file for a release. Example: make chlog-update VERSION=1.2.3
 	# Validate the version format
 	@if [[ ! "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$$ ]]; then \
-		echo "Error: Invalid version format. Tip: Use the format X.Y.Z (e.g., 1.123.23)."; \
+		echo "Error: Invalid version. Try running something like 'make chlog-update VERSION=0.85.0'"; \
 		exit 1; \
 	fi
 	# Convert the version to the desired format
 	@FORMATTED_VERSION="[$(VERSION)] - $$(date +'%Y-%m-%d')"; \
 	$(CHLOGGEN) update --version $$FORMATTED_VERSION
+	# Update PR numbers to hyperlinks in CHANGELOG.md
+	@sed -i -E 's/\(#([0-9, ]+)\)/([#]\1\(https:\/\/github.com\/signalfx\/splunk-otel-collector-chart\/pull\/\1\))/g' CHANGELOG.md
 
 
