@@ -60,16 +60,51 @@ To send us a pull request, please:
 2. Modify the source; please ensure a single change per PR. If you also
    reformat all the code, it will be hard for us to focus on your change.
 3. Please follow the versioning instructions found in the [RELEASE.md](https://github.com/signalfx/splunk-otel-collector-chart/blob/main/RELEASE.md).
-4. Ensure local tests pass and add new tests related to the contribution.
-5. Commit to your fork using clear commit messages.
-6. Send us a pull request, answering any default questions in the pull request
+4. Add a CHANGLOG.md entry if the behavior of this chart is altered, see [When to add a Changelog Entry](https://signalfx/splunk-otel-collector-chart/blob/main/CONTRIBUTING.md#when-to-add-a-changelog-entry).
+5. Ensure local tests pass and add new tests related to the contribution.
+6. Commit to your fork using clear commit messages.
+7. Send us a pull request, answering any default questions in the pull request
    interface.
-7. Pay attention to any automated CI failures reported in the pull request, and
+8. Pay attention to any automated CI failures reported in the pull request, and
    stay involved in the conversation.
 
 GitHub provides additional documentation on [forking a
 repository](https://help.github.com/articles/fork-a-repo/) and [creating a pull
 request](https://help.github.com/articles/creating-a-pull-request/).
+
+## Adding a Changelog Entry
+
+### Overview
+
+Our `CHANGELOG.md` files are automatically generated from `.yaml` files located in the `./.chloggen`
+directory. These files help users understand what changes have been made in each release.
+
+### When is a Changelog Entry Required?
+
+Add a changelog entry for pull requests that impact:
+
+1. Configuration or behavior of the collector
+2. Telemetry data exported from the collector
+3. APIs exported from collector packages
+
+**Skip a Changelog If:**
+
+- Your changes are only documentation updates
+- You're making minor changes that don't impact users (e.g., code cleanup)
+
+### How to Add a Changelog Entry
+
+**Quick Steps:**
+
+1. **Generate Entry File:** Run `make chlog-new` to create a `.yaml` file named after your current
+   branch in the `./.chloggen` directory.
+2. **Fill In Details:** Edit the new `.yaml` file to include all relevant information.
+3. **Validate Entry:** Run `make chlog-validate` to ensure your entry is formatted correctly.
+4. **Commit and Push:** Add the `.yaml` file to your pull request.
+
+**Alternative Method:**
+
+- Manually copy `./.chloggen/TEMPLATE.yaml` or create your own `.yaml` file, ensuring it has a unique name since the last release.
 
 ## Finding contributions to work on
 
