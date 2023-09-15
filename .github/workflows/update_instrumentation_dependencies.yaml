@@ -20,46 +20,68 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: swizzle version
-        id: swizzle_version
+        id: update_instrumentation
         run: |
-          REPO=ghcr.io/signalfx/splunk-otel-${{ matrix.language }}/splunk-otel-${{ matrix.language }}
-          LOCAL_VER=$(grep $REPO $VALUES_YAML | awk -F: '{print $2}' | tr -d ' "')
-          LATEST_VER=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API | sed "s/{lang}/${{ matrix.language }}/g") | jq -r .tag_name)
-          echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
-          echo "Current version of ${{ matrix.language }} is $LOCAL_VER, latest is $LATEST_VER"
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
 
-          if [ "$LATEST_VER" == "$LOCAL_VER" ]; then
+          REPO=ghcr.io/signalfx/splunk-otel-${{ matrix.language }}/splunk-otel-${{ matrix.language }}
+          CURRENT_VERSION=$(grep $REPO $VALUES_YAML | awk -F: '{print $2}' | tr -d ' "')
+          LATEST_VERSION=$(curl -qs -H "Accept: application/vnd.github+json" $(echo $LATEST_API | sed "s/{lang}/${{ matrix.language }}/g") | jq -r .tag_name)
+          echo "Current version of ${{ matrix.language }} is $CURRENT_VERSION, latest is $LATEST_VERSION"
+
+          if [ "$CURRENT_VERSION" == "$LATEST_VERSION"]; then
             echo We are already up to date. Nothing else to do.
           else
+            echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            echo "LATEST_VERSION=$LATEST_VERSION" >> $GITHUB_OUTPUT
+            echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
+
             echo 'Verifying that the image is pullable...'
             echo '(If this fails, the image version is out of sync with ghcr version)'
-            docker pull $REPO:$LATEST_VER
+            docker pull $REPO:$LATEST_VERSION
             echo 'Looks like we are good to update...'
             echo Updating to new version in values.yaml
-            echo "NEED_UPDATE=1" >> $GITHUB_OUTPUT
             VLINE=$(grep -n "${REPO}" $VALUES_YAML | cut -f1 -d:)
             echo "Line number for ${REPO} in ${VALUES_YAML} is: ${VLINE}"
             OLD_VER=$(sed -n "${VLINE}p" $VALUES_YAML | grep -oP 'v\K[0-9.]+')
             echo "Old version number is: ${OLD_VER}"
-            NEW_VER=${LATEST_VER#v} # removes 'v' from the start of the string
-            echo "New version number is: ${NEW_VER}"
-            echo "sed: ${VLINE}s/${OLD_VER}/${NEW_VER}/"
-            sed -i "${VLINE}s/${OLD_VER}/${NEW_VER}/" $VALUES_YAML
+            NEW_VERSION=${LATEST_VERSION#v} # removes 'v' from the start of the string
+            echo "New version number is: ${NEW_VERSION}"
+            echo "sed: ${VLINE}s/${OLD_VER}/${NEW_VERSION}/"
+            sed -i "${VLINE}s/${OLD_VER}/${NEW_VERSION}/" $VALUES_YAML
 
-            echo Render chart template
+            echo Updating rendered examples
             make render
 
             echo "Current git diff:"
             git --no-pager diff
           fi
-      - name: PR the new version
-        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+      - name:
+        id: create_pr
+        if: ${{ steps.update_instrumentation.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
         with:
-          commit-message: Update ${{ matrix.language }} instrumentation version
-          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
-          body: Use the new version of the ${{ matrix.language }} instrumentation
-          branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
+          commit-message: "Bump ${{ matrix.language }} instrumentation dependency from ${{ steps.update_instrumentation.outputs.CURRENT_VERSION }} to ${{ steps.update_instrumentation.outputs.LATEST_VERSION }}"
+          title: "Bump ${{ matrix.language }} instrumentation dependency from ${{ steps.update_instrumentation.outputs.CURRENT_VERSION }} to ${{ steps.update_instrumentation.outputs.LATEST_VERSION }}"
+          body: "Update to the new version of the ${{ matrix.language }} instrumentation dependency."
+          branch: "update-${{ matrix.language }}"
           base: main
           delete-branch: true
           modify-outputs: false
+      - name: Create changelog entry
+        if: ${{ steps.update_instrumentation.outputs.NEED_UPDATE == 1 }}
+        run: |
+          git fetch origin "update-${{ matrix.language }}"
+          git checkout "update-${{ matrix.language }}"
+
+          make chlog-new \
+            CHANGE_TYPE=enhancement \
+            COMPONENT=operator \
+            NOTE="Update ${{ matrix.language }} instrumentation version from ${{ steps.update_instrumentation.outputs.CURRENT_VERSION == 1 }} to ${{ steps.update_instrumentation.outputs.LATEST_VERSION == 1 }}" \
+            ISSUES="[${{ steps.create_pr.outputs.pull-request-number }}]" \
+            FILENAME="update-${{ matrix.language }}-instrumentation"
+
+          git add .
+          git commit -m "Add changelog for updating ${{ matrix.language }} instrumentation"
+          git push origin "update-${{ matrix.language }}"

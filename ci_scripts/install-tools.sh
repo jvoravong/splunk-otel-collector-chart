@@ -5,6 +5,7 @@
 #   - Installs tools like kubectl, helm, pre-commit, go, and chloggen.
 #   - Use OVERRIDE_OS_CHECK=true to bypass OS compatibility checks.
 #   - This script is intended to be run via `make install-tools`.
+#   - Prompts the user for approval to install or update each tool.
 #
 # Example Usage:
 #   Directly with bash: ./install-tools.sh [OVERRIDE_OS_CHECK=true]

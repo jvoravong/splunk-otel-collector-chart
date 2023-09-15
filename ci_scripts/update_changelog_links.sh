@@ -26,7 +26,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Create a temporary file to hold the updated CHANGELOG.md content
 TEMP_CHANGELOG="CHANGELOG.md.tmp"
 
-# ---- Update PR Links in CHANGELOG.md ----
+# ---- Update CHANGELOG.md for Subcontext and PR Links ----
 while IFS= read -r line; do
     if [[ $line =~ \(\#([0-9,# ]+)\)$ ]]; then
         pr_ids=${BASH_REMATCH[1]}
@@ -51,7 +51,12 @@ while IFS= read -r line; do
         echo "$line" >> "$TEMP_CHANGELOG"
     fi
 done < "CHANGELOG.md"
+mv "$TEMP_CHANGELOG" "CHANGELOG.md"
 
+# Insert the line about the Splunk OpenTelemetry Collector version adopted in this Kubernetes release
+appVersion=$(grep "appVersion:" helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
+insert_line="This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v${appVersion}](https://github.com/signalfx/splunk-otel-collector/releases/tag/v${appVersion}).\n"
+awk -v n=11 -v s="$insert_line" 'NR == n {print s} {print}' CHANGELOG.md > $TEMP_CHANGELOG
 mv "$TEMP_CHANGELOG" "CHANGELOG.md"
 
 echo "Successfully updated PR links in CHANGELOG.md"
