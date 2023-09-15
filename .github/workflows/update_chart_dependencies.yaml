@@ -2,8 +2,8 @@ name: Check for new chart dependency updates
 
 on:
   schedule:
-    # Run every Monday at noon.
-    - cron: "0 12 * * 1"
+    # Run every 12 hrs on the 11th hour at 30 minutes past.
+    - cron: '30 11 */12 * *'
   workflow_dispatch:
 
 env:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Currently this worfklow will update the listed dependencies in the Chart.yaml
+        # Currently, this workflow will update the listed dependencies in the Chart.yaml
         repo: ['cert-manager', 'opentelemetry-operator'] # Add other repos here
     steps:
       - uses: actions/checkout@v4
@@ -25,13 +25,14 @@ jobs:
           make repo-update
 
           # Fetch the latest version using helm search repo
-          LATEST_VER=$(helm search repo ${{ matrix.repo }} --versions | awk 'NR==2{print $2}')
-          echo "LATEST_VER=$LATEST_VER" >> $GITHUB_OUTPUT
+          LATEST_VERSION=$(helm search repo ${{ matrix.repo }} --versions | awk 'NR==2{print $2}')
+          echo "LATEST_VERSION=$LATEST_VERSION" >> GITHUB_OUTPUT
 
           # Retrieve the current version from chart.yaml
-          DEP_PATH=$(yq eval ".dependencies[] | select(.name == \"${{ matrix.repo }}\") | .version" $CHART_YAML)
+          CURRENT_VERSION=$(yq eval ".dependencies[] | select(.name == \"${{ matrix.repo }}\") | .version" ${{ env.CHART_YAML }})
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> GITHUB_OUTPUT
 
-          echo "Current version of ${{ matrix.repo }} is $DEP_PATH, latest is $LATEST_VER"
+          echo "Current version of ${{ matrix.repo }} is $CURRENT_VERSION, latest is $LATEST_VERSION"
 
           if [ "$LATEST_VER" == "$DEP_PATH" ]; then
             echo We are already up to date. Nothing else to do.
@@ -49,15 +50,36 @@ jobs:
 
             echo "Current git diff:"
             git --no-pager diff
-          fi
-      - name: PR the new version
+      - name:
+        id: create_pr
         if: ${{ steps.update_chart.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
         with:
-          commit-message: Update ${{ matrix.repo }} chart version
-          title: Update ${{ matrix.repo }} chart version to ${{ steps.update_chart.outputs.LATEST_VER }}
-          body: Use the new version of the ${{ matrix.repo }} chart
-          branch: "update-${{ matrix.repo }}-${{ steps.update_chart.outputs.LATEST_VER }}"
+          commit-message: "Bump ${{ matrix.repo }} chart dependency from ${{ steps.update_chart.outputs.CURRENT_VERSION }} to ${{ steps.update_chart.outputs.LATEST_VERSION }}"
+          title: "Bump ${{ matrix.repo }} chart dependency from ${{ steps.update_chart.outputs.CURRENT_VERSION }} to ${{ steps.update_chart.outputs.LATEST_VERSION }}"
+          body: "Update to the new version of the ${{ matrix.repo }} chart dependency."
+          branch: "update-${{ matrix.repo }}"
+          base: main
+          delete-branch: true
+          modify-outputs: false
+      - name: Create changelog entry
+        if: ${{ steps.update_chart.outputs.NEED_UPDATE == 1 }}
+        run: |
+          # If a previous unreleased changelog entry already exist it is updated.
+          make chlog-new \
+            CHANGE_TYPE=enhancement \
+            COMPONENT=${{ matrix.repo }} \
+            NOTE="Update ${{ matrix.repo }} chart dependency version from $CURRENT_VERSION to $LATEST_VERSION" \
+            ISSUES="[${{ steps.create_pr.outputs.pr-number }}]" \
+            FILENAME="update-${{ matrix.repo }}-chart"
+      - name: Update PR with CHANGELOG
+        if: ${{ steps.update_chart.outputs.NEED_UPDATE == 1 }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "Add or update .chloggen/update-${{ matrix.repo }}-chart.yaml"
+          title: "Bump ${{ matrix.repo }} chart dependency from ${{ steps.update_chart.outputs.CURRENT_VERSION }} to ${{ steps.update_chart.outputs.LATEST_VERSION }}"
+          body: "Update to the new version of the ${{ matrix.repo }} chart dependency."
+          branch: "update-${{ matrix.repo }}"
           base: main
           delete-branch: true
           modify-outputs: false

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
  <!-- For unreleased changes, see entries in .chloggen -->
  <!-- next version -->
 
+## [0.86.0]
+
+This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v0.84.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.84.0).
+
+### 💡 Enhancements 💡
+
+- `chart`: Add support for OpenTelemetry CHANGELOG.md generator tool, see [chloggen](https://github.com/open-telemetry/opentelemetry-operator/tree/main/.chloggen) ([#923](https://github.com/signalfx/splunk-otel-collector-chart/pull/923))
+- `chart`: Add support for OpenTelemetry CHANGELOG.md generator tool, see [chloggen](https://github.com/open-telemetry/opentelemetry-operator/tree/main/.chloggen) ([#923](https://github.com/signalfx/splunk-otel-collector-chart/pull/923),[#924](https://github.com/signalfx/splunk-otel-collector-chart/pull/#924))
+- `chart`: Add support for OpenTelemetry CHANGELOG.md generator tool, see [chloggen](https://github.com/open-telemetry/opentelemetry-operator/tree/main/.chloggen) ([#923](https://github.com/signalfx/splunk-otel-collector-chart/pull/923),[#924](https://github.com/signalfx/splunk-otel-collector-chart/pull/#924),[#925](https://github.com/signalfx/splunk-otel-collector-chart/pull/#925))
+
 ## [0.84.0] - 2023-09-11
 
 ### 💡 Enhancements 💡
@@ -281,7 +291,7 @@ This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk Op
 
 ### 🚀 New components 🚀
 
-- A way to provide a custom image for init container patching host log directories (#534, #535)
+- A way to provide a custom image for init container patching host log directories ([#534](https://github.com/signalfx/splunk-otel-collector-chart/pull/534),[#535](https://github.com/signalfx/splunk-otel-collector-chart/pull/#535))
 
 ### 💡 Enhancements 💡
 
@@ -421,7 +431,7 @@ This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk Op
 
 ### 💡 Enhancements 💡
 
-- Migrate filelog operators to follow opentelemetry-log-collection v0.29.0 changes (#436, #441)
+- Migrate filelog operators to follow opentelemetry-log-collection v0.29.0 changes ([#436](https://github.com/signalfx/splunk-otel-collector-chart/pull/436),[#441](https://github.com/signalfx/splunk-otel-collector-chart/pull/#441))
   - [BREAKING CHANGE] Several breaking changes were made that affect the
     filelog, syslog, tcplog, and journald receivers. Any use of the
     extraFileLogs config, logsCollection.containers.extraOperators config,
@@ -481,7 +491,7 @@ This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk Op
 
 ### 🧰 Bug fixes 🧰
 
-- Bug where Prometheus errors out using default configuration on EKS and GKE (#401, #405)
+- Bug where Prometheus errors out using default configuration on EKS and GKE ([#401](https://github.com/signalfx/splunk-otel-collector-chart/pull/401),[#405](https://github.com/signalfx/splunk-otel-collector-chart/pull/#405))
 
 ## [0.44.1] - 2022-03-08
 
@@ -678,7 +688,7 @@ guidelines](https://github.com/signalfx/splunk-otel-collector-chart/blob/main/UP
   collection gets `container.id` attribute that allows container level
   correlation in Splunk Observability Cloud closing a feature parity gap with
   fluentd ([#238](https://github.com/signalfx/splunk-otel-collector-chart/pull/238))
-- Add strict values.yaml schema validation (#227, #234, #239)
+- Add strict values.yaml schema validation ([#227](https://github.com/signalfx/splunk-otel-collector-chart/pull/227),[#234](https://github.com/signalfx/splunk-otel-collector-chart/pull/#234),[#239](https://github.com/signalfx/splunk-otel-collector-chart/pull/#239))
 
 ### 💡 Enhancements 💡
 
@@ -690,8 +700,8 @@ guidelines](https://github.com/signalfx/splunk-otel-collector-chart/blob/main/UP
 - Change `run_id` log resource attribute to `k8s.container.restart_count` ([#226](https://github.com/signalfx/splunk-otel-collector-chart/pull/226))
 - Use only `splunkPlatform.endpoint` and `splunkObservability.realm` parameters
   to identify which destination is enabled, remove default value for
-  `splunkObservability.realm` (#230, #233)
-- Upgrade splunk-otel-collector image to 0.37.1 (#237, #249)
+  `splunkObservability.realm` ([#230](https://github.com/signalfx/splunk-otel-collector-chart/pull/230),[#233](https://github.com/signalfx/splunk-otel-collector-chart/pull/#233))
+- Upgrade splunk-otel-collector image to 0.37.1 ([#237](https://github.com/signalfx/splunk-otel-collector-chart/pull/237),[#249](https://github.com/signalfx/splunk-otel-collector-chart/pull/#249))
 - Simplify configuration for switching to native OTel logs collection ([#246](https://github.com/signalfx/splunk-otel-collector-chart/pull/246))
 
 ### 🧰 Bug fixes 🧰
