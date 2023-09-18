@@ -98,16 +98,20 @@ chlog-new: chlog-available ## Creates or updates a YAML file under .chloggen
 	#   make chlog-new CHANGE_TYPE=enhancement COMPONENT=agent NOTE="Add feature X" ISSUES='[4242]' FILENAME=add-feature-x SUBTEXT="Supports Y"
 	@$(CHLOGGEN_NEW_SCRIPT) || exit 1
 
-.PHONY: chlog-validate
+.PHONY: chlog-pr-validate
+chlog-pr-validate: ## Validates changelog requirements for pull requests
+	./ci_scripts/chloggen-pr-validate.sh || exit 1
+
+.PHONY: chlog-release-validate
 chlog-validate: chlog-available ## Validates all YAML files in .chloggen
 	$(CHLOGGEN) validate || exit 1
 
-.PHONY: chlog-preview
-chlog-preview: chlog-available ## Provide a preview of the generated CHANGELOG.md file for a release
+.PHONY: chlog-release-preview
+chlog-preview: chlog-available chlog-release-validate ## Provide a preview of the generated CHANGELOG.md file for a release
 	$(CHLOGGEN) update --dry || exit 1
 
 .PHONY: chlog-release
-chlog-release: chlog-available chlog-validate ## Creates a release CHANGELOG.md entry from content in .chloggen
+chlog-release: chlog-available chlog-release-validate ## Creates a release CHANGELOG.md entry from content in .chloggen
 	# Example Usage: make chlog-update VERSION=0.85.0
 	@export FORMATTED_VERSION="[$(VERSION)] - $$(date +'%Y-%m-%d')"; \
 	$(CHLOGGEN) update --version $$FORMATTED_VERSION || exit 1; \

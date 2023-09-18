@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/version: "0.84.0"
     app: splunk-otel-collector
     component: otel-operator
-    chart: splunk-otel-collector-0.84.0
+    chart: splunk-otel-collector-0.84.0asdfasdf
     release: default
     heritage: Helm
     app.kubernetes.io/component: otel-operator

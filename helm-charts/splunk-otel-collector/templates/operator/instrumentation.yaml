@@ -8,7 +8,7 @@ metadata:
     {{- include "splunk-otel-collector.commonLabels" . | nindent 4 }}
     app: {{ template "splunk-otel-collector.name" . }}
     component: otel-operator
-    chart: {{ template "splunk-otel-collector.chart" . }}
+    chart: {{ template "splunk-otel-collector.chart" . }}asdfasdf
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
     app.kubernetes.io/component: otel-operator
