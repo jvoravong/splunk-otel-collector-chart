@@ -2,7 +2,7 @@
 # The general settings and variables for the project
 SHELL := /bin/bash
 
-## Location for GO resources
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
 else
@@ -35,7 +35,7 @@ init: install-tools ## Initialize the environment
 OVERRIDE_OS_CHECK ?= false
 .PHONY: install-tools
 install-tools: $(LOCALBIN) ## Install tools (macOS/Linux)
-	@OVERRIDE_OS_CHECK=$(OVERRIDE_OS_CHECK) LOCALBIN=$(LOCALBIN) ./ci_scripts/install-tools.sh || exit 1
+	@OVERRIDE_OS_CHECK=$(OVERRIDE_OS_CHECK) GOBIN=$(LOCALBIN) ./ci_scripts/install-tools.sh || exit 1
 
 ##@ Build
 # Tasks related to building the Helm chart
