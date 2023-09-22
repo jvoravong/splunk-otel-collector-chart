@@ -36,12 +36,6 @@ jobs:
         run: |
           echo "Update dependencies for Helm chart"
 
-          # Set debug argument if DEBUG_MODE is true
-          DEBUG_ARG=""
-          if [ "${{ github.event.inputs.DEBUG_MODE }}" == "true" ]; then
-            DEBUG_ARG="--debug"
-          fi
-
           # Ensure repositories are up-to-date
           make repo-update
 
@@ -67,7 +61,7 @@ jobs:
 
             if [ ${{ matrix.repo }} == "opentelemetry-operator" ]; then
               echo "Update Splunk Operator Instrumentation Images if Needed"
-              ./ci_scripts/update-images-operator-otel.sh ${{ matrix.language }} $DEBUG_ARG || exit 1
+              ./ci_scripts/update-images-operator-otel.sh ${{ matrix.language }} || exit 1
             fi
 
             echo Updating rendered examples

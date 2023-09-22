@@ -34,14 +34,8 @@ jobs:
         run: |
           echo "Update Splunk Operator Instrumentation for ${{ matrix.language }}"
 
-          # Set debug argument if DEBUG_MODE is true
-          DEBUG_ARG=""
-          if [ "${{ github.event.inputs.DEBUG_MODE }}" == "true" ]; then
-            DEBUG_ARG="--debug"
-          fi
-
           # Run the update script and handle errors
-          ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} $DEBUG_ARG || exit 1
+          ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} || exit 1
 
           # Check if an update is needed
           if [ "$NEED_UPDATE" -eq 0 ]; then
