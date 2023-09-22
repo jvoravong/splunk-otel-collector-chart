@@ -12,7 +12,7 @@
 
 # Include the base utility functions for setting and debugging variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/base_util.sh"
+source "$SCRIPT_DIR/common.sh"
 
 # ---- Initialize Variables ----
 # Get the current branch name

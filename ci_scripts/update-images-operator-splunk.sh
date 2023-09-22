@@ -14,7 +14,7 @@
 
 # Include the base utility functions for setting and debugging variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/base_util.sh"
+source "$SCRIPT_DIR/common.sh"
 
 # ---- Validate Input Arguments ----
 # Check for command-line arguments
@@ -60,6 +60,9 @@ fi
 
 # Emit the NEED_UPDATE variable to either GitHub output or stdout
 emit_output "NEED_UPDATE"
+
+# If in a CI/CD pipeline, setup git config for the bot user
+setup_git
 
 echo "Image update process completed successfully!"
 exit 0

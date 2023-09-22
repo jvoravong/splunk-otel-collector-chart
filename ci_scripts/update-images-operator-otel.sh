@@ -10,7 +10,7 @@
 
 # Include the base utility functions for setting and debugging variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/base_util.sh"
+source "$SCRIPT_DIR/common.sh"
 
 # ---- Initialize Temporary Files ----
 # Create a temporary file to hold a subsection of the values.yaml file
@@ -93,6 +93,9 @@ mv "${VALUES_FILE_PATH}.updated" "$VALUES_FILE_PATH"
 # Cleanup temporary files
 rm "$TEMP_VALUES_FILE"
 rm "$TEMP_VERSIONS"
+
+# If in a CI/CD pipeline, setup git config for the bot user
+setup_git
 
 echo "Image update process completed successfully!"
 exit 0
