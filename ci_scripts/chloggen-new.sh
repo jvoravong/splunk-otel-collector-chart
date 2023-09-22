@@ -34,14 +34,7 @@ fi
 # Check if a changelog entry with the given filename already exists
 if [ -f ".chloggen/${FILENAME}.yaml" ]; then
   echo "Changelog entry ${FILENAME}.yaml already exists. Updating."
-  # Extend the .issues field and update it
-  setd "OLD_ISSUES" $(yq eval '.issues' ".chloggen/${FILENAME}.yaml")
-  # Combine the old and new issues and deduplicate them
-  setd "NEW_ISSUES" $(echo $OLD_ISSUES $ISSUES | jq -s 'add | unique')
-  echo "Resulting issues: $NEW_ISSUES"
-  yq eval -i ".issues = $NEW_ISSUES | .issues style=\"flow\" " .chloggen/${FILENAME}.yaml
 else
-  # Create a new changelog entry
   echo "Creating new changelog entry ${FILENAME}.yaml."
   cp .chloggen/TEMPLATE.yaml .chloggen/${FILENAME}.yaml
 fi
@@ -51,6 +44,16 @@ fi
 [[ ! -z "$COMPONENT" ]] && yq eval -i ".component = \"$COMPONENT\"" .chloggen/${FILENAME}.yaml
 [[ ! -z "$NOTE" ]] && yq eval -i ".note = \"$NOTE\"" .chloggen/${FILENAME}.yaml
 [[ ! -z "$SUBTEXT" ]] && yq eval -i ".subtext = \"$SUBTEXT\"" .chloggen/${FILENAME}.yaml
+# Extend the list of issue IDs rather than overwriting them
+if [ ! -z "$ISSUES" ]; then
+  # Extend the .issues field and update it
+  setd "OLD_ISSUES" "$(yq eval '.issues' ".chloggen/${FILENAME}.yaml")"
+  # Combine the old and new issues and deduplicate them
+  setd "NEW_ISSUES" "'$(echo "$OLD_ISSUES" "$ISSUES" | jq -sc 'add | unique')'"
+  echo "Resulting issues: $NEW_ISSUES"
+  yq eval -i ".issues = ${NEW_ISSUES//\'/} | .issues style=\"flow\" " ".chloggen/${FILENAME}.yaml"
+fi
+
 
 echo "${FILENAME}.yaml has been created or updated."
 exit 0

@@ -59,9 +59,9 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: Update ${{ matrix.language }} instrumentation version
-          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
+          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }}
           body: Use the new version of the ${{ matrix.language }} instrumentation
-          branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
+          branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.TAG_UPSTREAM }}"
           base: main
           delete-branch: true
           modify-outputs: false

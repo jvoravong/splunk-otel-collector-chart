@@ -23,7 +23,7 @@ while IFS= read -r line; do
         IFS=',' read -ra ADDR <<< "$pr_ids"
         for i in "${ADDR[@]}"; do
             setd "TRIMMED_I" $(echo "$i" | xargs)  # Remove leading/trailing whitespaces
-            setd "HYPERLINK" "[#${TRIMMED_I}](https://github.com/signalfx/splunk-otel-collector-chart/pull/${TRIMMED_I})"
+            setd "HYPERLINK" "[#${TRIMMED_I}](https://github.com/${OWNER}/splunk-otel-collector-chart/pull/${TRIMMED_I})"
             # Remove extra '#' characters from the HYPERLINK
             setd "HYPERLINK" ${HYPERLINK//##/#}
             if [ "$FIRST" -eq 1 ]; then
@@ -43,7 +43,7 @@ mv "$TEMP_CHANGELOG_PATH" "CHANGELOG.md"
 
 # Insert the subcontext line about the Splunk OpenTelemetry Collector version adopted in this release
 setd "APP_VERSION" $(grep "appVersion:" $CHART_FILE_PATH | awk '{print $2}')
-setd "INSERT_LINE" "This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v${APP_VERSION}](https://github.com/signalfx/splunk-otel-collector/releases/tag/v${APP_VERSION}).\n"
+setd "INSERT_LINE" "This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v${APP_VERSION}](https://github.com/${OWNER}/splunk-otel-collector/releases/tag/v${APP_VERSION}).\n"
 awk -v n=9 -v s="$INSERT_LINE" 'NR == n {print s} {print}' CHANGELOG.md > $TEMP_CHANGELOG_PATH
 mv "$TEMP_CHANGELOG_PATH" "CHANGELOG.md"
 

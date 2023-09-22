@@ -34,8 +34,10 @@ init: install-tools ## Initialize the environment
 
 OVERRIDE_OS_CHECK ?= false
 .PHONY: install-tools
-install-tools: $(LOCALBIN) ## Install tools (macOS/Linux)
-	OVERRIDE_OS_CHECK=$(OVERRIDE_OS_CHECK) GOBIN=$(LOCALBIN) ci_scripts/install-tools.sh || exit 1
+install-tools: ## Install tools (macOS/Linux)
+	# Example Usage:
+	#   make install-tools [OVERRIDE_OS_CHECK=true] [AUTO_APPROVE=true] [DEBUG_MODE=true]
+	LOCALBIN=$(LOCALBIN) OVERRIDE_OS_CHECK=$(OVERRIDE_OS_CHECK) GOBIN=$(LOCALBIN) ci_scripts/install-tools.sh || exit 1
 
 ##@ Build
 # Tasks related to building the Helm chart
@@ -92,14 +94,14 @@ chlog-available: ## Validate the chloggen tool is available
 .PHONY: chlog-new
 chlog-new: chlog-available ## Creates or updates a YAML file under .chloggen
 	# Example Usage:
-	#   make chlog-new DEBUG_MODE=1
+	#   make chlog-new [DEBUG_MODE=true]
 	#   make chlog-new CHANGE_TYPE=enhancement COMPONENT=agent NOTE="Add feature X" ISSUES='[4242]' FILENAME=add-feature-x SUBTEXT="Supports Y"
 	ci_scripts/chloggen-new.sh || exit 1
 
 .PHONY: chlog-validate
 chlog-validate: chlog-available ## Validates CHANGELOG.md entry content in .chloggen
 	# Example Usage:
-	#   make chlog-validate DEBUG_MODE=1
+	#   make chlog-validate [DEBUG_MODE=true]
 	$(CHLOGGEN) validate || exit 1
 	ci_scripts/chloggen-pr-validate.sh || exit 1
 
@@ -110,6 +112,6 @@ chlog-release-preview: chlog-validate ## Provide a preview of the generated CHAN
 .PHONY: chlog-release
 chlog-release: chlog-validate ## Creates a release CHANGELOG.md entry from content in .chloggen
 	# Example Usage:
-	#   make chlog-release VERSION=0.85.0 [DEBUG_MODE=1]
+	#   make chlog-release VERSION=0.85.0 [DEBUG_MODE=true]
 	$(CHLOGGEN) update --version "[$(VERSION)] - $$(date +'%Y-%m-%d')" || exit 1; \
 	ci_scripts/chloggen-release.sh || exit 1

@@ -52,8 +52,10 @@ if [ "$TAG_UPSTREAM" == "$TAG_LOCAL" ]; then
   echo "We are already up to date. Nothing else to do."
 elif [[ -z "$TAG_LOCAL" || "$TAG_LOCAL" == "null" || "$TAG_LOCAL" != "$TAG_UPSTREAM" ]]; then
   debug "Upserting value for ${REPOSITORY_LOCAL}:${TAG_LOCAL}"
-  yq eval -i ".${TAG_LOCAL_PATH} = \"$TAG_UPSTREAM\"" "${VALUES_FILE_PATH}"
   setd "NEED_UPDATE" 1  # Setting NEED_UPDATE to 1 as an update is required
+  emit_output "TAG_LOCAL"
+  emit_output "TAG_UPSTREAM"
+  yq eval -i ".${TAG_LOCAL_PATH} = \"$TAG_UPSTREAM\"" "${VALUES_FILE_PATH}"
 fi
 
 # Emit the NEED_UPDATE variable to either GitHub output or stdout

@@ -1,5 +1,11 @@
 name: Ensure valid and up-to-date Changelog
 
+# Description:
+# Automates the validation of .chloggen (CHANGELOG.md) entries ensuring:
+#   1. All entries are valid.
+#   2. A new entry is added for updates to chart templates or rendered example content.
+#   3. Bypass validation with a 'Skip Changelog' label or a PR title containing '[chore]'.
+
 on: pull_request
 
 jobs:
