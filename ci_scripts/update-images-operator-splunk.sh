@@ -51,7 +51,7 @@ setd "NEED_UPDATE" "${NEED_UPDATE:-0}"  # Sets NEED_UPDATE to its current value 
 if [ "$TAG_UPSTREAM" == "$TAG_LOCAL" ]; then
   echo "We are already up to date. Nothing else to do."
 elif [[ -z "$TAG_LOCAL" || "$TAG_LOCAL" == "null" || "$TAG_LOCAL" != "$TAG_UPSTREAM" ]]; then
-  debug "Upserting value for ${REPOSITORY_LOCAL}:${TAG_LOCAL}"
+  echo "We are not up to date. Updating now."
   setd "NEED_UPDATE" 1  # Setting NEED_UPDATE to 1 as an update is required
   emit_output "TAG_LOCAL"
   emit_output "TAG_UPSTREAM"

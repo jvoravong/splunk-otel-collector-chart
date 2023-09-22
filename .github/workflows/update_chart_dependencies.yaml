@@ -21,6 +21,7 @@ on:
 
 env:
   CHART_YAML: helm-charts/splunk-otel-collector/Chart.yaml
+  DEBUG_MODE: ${{ github.event.inputs.DEBUG_MODE }}
 
 jobs:
   maybe_update:

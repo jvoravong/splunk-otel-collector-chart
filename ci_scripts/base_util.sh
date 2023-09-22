@@ -67,12 +67,19 @@ setd() {
 debug() {
     if [[ $DEBUG_MODE == true ]]; then
         local var_name="$1"
-        local var_value="${!var_name}"  # Indirect reference to get the value
-        if [[ -f "$var_value" ]]; then
-            echo "[DEBUG] $var_name: Content of file $var_value:"
-            cat "$var_value"
+        # If the argument is a declared variable
+        if [[ -n "${!var_name}" ]]; then
+            local var_value="${!var_name}"  # Indirect reference to get the value
+            # If the value corresponds to a file path
+            if [[ -f "$var_value" ]]; then
+                echo "[DEBUG] $var_name: Content of file $var_value:"
+                cat "$var_value"
+            else
+                echo "[DEBUG] $var_name: $var_value"
+            fi
+        # If the argument is a string
         else
-            echo "[DEBUG] $var_name: $var_value"
+            echo "[DEBUG] $var_name"
         fi
     fi
 }

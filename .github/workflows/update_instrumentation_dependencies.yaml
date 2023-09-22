@@ -18,6 +18,7 @@ on:
 env:
   VALUES_YAML: helm-charts/splunk-otel-collector/values.yaml
   LATEST_API: https://api.github.com/repos/signalfx/splunk-otel-{lang}/releases/latest
+  DEBUG_MODE: ${{ github.event.inputs.DEBUG_MODE }}
 
 jobs:
   maybe_update:
