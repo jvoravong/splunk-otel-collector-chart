@@ -81,4 +81,3 @@ jobs:
           branch: "update-${{ matrix.repo }}-${{ steps.update_chart.outputs.LATEST_VER }}"
           base: main
           delete-branch: true
-          modify-outputs: false

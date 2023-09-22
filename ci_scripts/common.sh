@@ -97,3 +97,19 @@ emit_output() {
         echo "${var_name}=${var_value}"
     fi
 }
+
+# ---- CI/CD Methods ----
+# Function: setup_git
+# Description: Configures git with predefined user name and email.
+# Designed to be used in a GitHub workflow environment.
+# Usage: setup_git
+setup_git() {
+    # Check if the function is being run in a GitHub workflow environment
+    if [[ -z "$GITHUB_ACTIONS" ]]; then
+      debug "Skipping setup git config"
+    else
+      git config --global user.name "release-bot"
+      git config --global user.email "ssg-srv-gh-o11y-gdi@splunk.com"
+      echo "Successfully setup git config for release-bot"
+    fi
+}

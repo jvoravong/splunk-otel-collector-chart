@@ -10,7 +10,7 @@
 
 # Include the base utility functions for setting and debugging variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/base_util.sh"
+source "$SCRIPT_DIR/common.sh"
 
 # ---- Initialize Temporary Files ----
 # Create a temporary file to hold a subsection of the values.yaml file
@@ -76,9 +76,6 @@ while IFS='=' read -r IMAGE_KEY VERSION; do
     fi
 done < "${TEMP_VERSIONS}"
 
-# Emit the NEED_UPDATE variable to either GitHub output or stdout
-emit_output "NEED_UPDATE"
-
 # Merge the updated subsection back into values.yaml
 # This approach specifically updates only the subsection between the start and end tokens.
 # By doing so, we avoid reformatting the entire file, thus preserving the original structure and comments.
@@ -87,12 +84,17 @@ awk '
   /# Auto-instrumentation Libraries \(Start\)/ {p=1; print $0; next}
   /# Auto-instrumentation Libraries \(End\)/ {p=0; while((getline line < "'$TEMP_VALUES_FILE'") > 0) printf "      %s\n", line; print $0; next}
 ' "$VALUES_FILE_PATH" > "${VALUES_FILE_PATH}.updated"
-
 # Replace the original values.yaml with the updated version
 mv "${VALUES_FILE_PATH}.updated" "$VALUES_FILE_PATH"
 # Cleanup temporary files
 rm "$TEMP_VALUES_FILE"
 rm "$TEMP_VERSIONS"
+
+
+# Emit the NEED_UPDATE variable to either GitHub output or stdout
+emit_output "NEED_UPDATE"
+# If in a CI/CD pipeline, setup git config for the bot user
+setup_git
 
 echo "Image update process completed successfully!"
 exit 0
