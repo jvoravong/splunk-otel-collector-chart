@@ -14,7 +14,7 @@
 
 # Include the base utility functions for setting and debugging variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/base_util.sh"
+source "$SCRIPT_DIR/common.sh"
 
 # ---- Validate Input Arguments ----
 # Check for command-line arguments
@@ -27,6 +27,8 @@ fi
 # ---- Initialize Variables ----
 # Set the instrumentation library name
 setd "INST_LIB_NAME" "$1"
+# Create a temporary file to hold a subsection of the values.yaml file
+setd "TEMP_VALUES_FILE" "$SCRIPT_DIR/temp_values_subsection.yaml"
 
 # Set repository-related variables
 setd "REPO" "ghcr.io/${OWNER}/splunk-otel-${INST_LIB_NAME}/splunk-otel-${INST_LIB_NAME}"
@@ -47,19 +49,35 @@ echo "${REPOSITORY_LOCAL} -> Local tag: ${TAG_LOCAL}, Latest tag: $TAG_UPSTREAM"
 
 # ---- Update Version Information ----
 # If needed, update the tag version in values.yaml
-setd "NEED_UPDATE" "${NEED_UPDATE:-0}"  # Sets NEED_UPDATE to its current value or 0 if not set
 if [ "$TAG_UPSTREAM" == "$TAG_LOCAL" ]; then
   echo "We are already up to date. Nothing else to do."
-elif [[ -z "$TAG_LOCAL" || "$TAG_LOCAL" == "null" || "$TAG_LOCAL" != "$TAG_UPSTREAM" ]]; then
-  echo "We are not up to date. Updating now."
-  setd "NEED_UPDATE" 1  # Setting NEED_UPDATE to 1 as an update is required
-  emit_output "TAG_LOCAL"
-  emit_output "TAG_UPSTREAM"
-  yq eval -i ".${TAG_LOCAL_PATH} = \"$TAG_UPSTREAM\"" "${VALUES_FILE_PATH}"
+  exit 0
 fi
+echo "We are not up to date. Updating now."
+setd "NEED_UPDATE" 1
+emit_output "TAG_LOCAL"
+emit_output "TAG_UPSTREAM"
+
+# ---- Extract Subsection for Update ----
+# Extract the content between "# Auto-instrumentation Libraries (Start)" and "# Auto-instrumentation Libraries (End)"
+awk '/# Auto-instrumentation Libraries \(Start\)/,/# Auto-instrumentation Libraries \(End\)/' "$VALUES_FILE_PATH" | grep -v "# Auto-instrumentation Libraries " > "$TEMP_VALUES_FILE"
+
+# ---- Update Image Information ----
+yq eval -i ".${TAG_LOCAL_PATH} = \"$TAG_UPSTREAM\"" "${VALUES_FILE_PATH}"
+awk '
+  !p && !/# Auto-instrumentation Libraries \(Start\)/ && !/# Auto-instrumentation Libraries \(End\)/ { print $0; next }
+  /# Auto-instrumentation Libraries \(Start\)/ {p=1; print $0; next}
+  /# Auto-instrumentation Libraries \(End\)/ {p=0; while((getline line < "'$TEMP_VALUES_FILE'") > 0) printf "      %s\n", line; print $0; next}
+' "$VALUES_FILE_PATH" > "${VALUES_FILE_PATH}.updated"
+# Replace the original values.yaml with the updated version
+mv "${VALUES_FILE_PATH}.updated" "$VALUES_FILE_PATH"
+# Cleanup temporary files
+rm "$TEMP_VALUES_FILE"
 
 # Emit the NEED_UPDATE variable to either GitHub output or stdout
 emit_output "NEED_UPDATE"
+# If in a CI/CD pipeline, setup git config for the bot user
+setup_git
 
 echo "Image update process completed successfully!"
 exit 0

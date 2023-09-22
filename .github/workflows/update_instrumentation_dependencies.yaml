@@ -56,7 +56,25 @@ jobs:
           commit-message: Update ${{ matrix.language }} instrumentation version
           title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }}
           body: Use the new version of the ${{ matrix.language }} instrumentation
-          branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.TAG_UPSTREAM }}"
+          branch: "update-${{ matrix.language }}"
           base: main
           delete-branch: true
-          modify-outputs: false
+      - name: Add CHANGELOG entry
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          git fetch origin
+          git checkout "update-${{ matrix.language }}"
+          RESPONSE=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository }}:update-${{ matrix.language }})
+            echo "$RESPONSE"
+          PR_ID=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository }}:update-${{ matrix.language }} \
+                | jq '.[0].number')
+          make chlog-new CHANGE_TYPE=enhancement COMPONENT=operator \
+            NOTE="Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }}" \
+            ISSUES="[$PR_ID]"
+          git add .
+          git commit -m "Add .chloggen entry"
+          git push origin "update-${{ matrix.language }}"
