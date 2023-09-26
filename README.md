@@ -121,7 +121,7 @@ The following prerequisites are required to use the helm chart:
   * [Set up and use HTTP Event Collector in Splunk Web](https://docs.splunk.com/Documentation/Splunk/8.2.0/Data/UsetheHTTPEventCollector)
   * [Scale HTTP Event Collector with distributed deployments](https://docs.splunk.com/Documentation/Splunk/8.2.0/Data/ScaleHTTPEventCollector)
 
-#### To send data to Splunk Observability Cloud
+#### To send data to Splunk Observability Cloud asdfasdfsadf
 
 - [Splunk Observability Cloud](https://docs.splunk.com/Observability/gdi/opentelemetry/install-k8s.html):
   - [Splunk Access Token](https://docs.splunk.com/Observability/admin/authentication-tokens/org-tokens.html#admin-org-tokens)
