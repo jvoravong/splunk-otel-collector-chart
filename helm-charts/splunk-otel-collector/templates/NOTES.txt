@@ -62,7 +62,7 @@ Splunk Network Explorer is installed and configured.
           Upgrade guidelines: https://github.com/signalfx/splunk-otel-collector-chart/blob/main/UPGRADING.md#0371-to-0380
 {{ end }}
 {{- if not (eq (toString .Values.otelK8sClusterReceiver) "<nil>") }}
-a[WARNING] "otelK8sClusterReceiver" parameter group is deprecated, please rename it to "clusterReceiver" in your custom values.yaml.
+aa[WARNING] "otelK8sClusterReceiver" parameter group is deprecated, please rename it to "clusterReceiver" in your custom values.yaml.
           Upgrade guidelines: https://github.com/signalfx/splunk-otel-collector-chart/blob/main/UPGRADING.md#0371-to-0380
 {{ end }}
 {{- if not (eq (toString .Values.image.fluentd.initContainer) "<nil>") }}
