@@ -44,7 +44,7 @@ for file in $CHANGED_FILES; do
     examples/*/rendered_manifests*)
         RENDERED_MANIFESTS_UPDATED=1
         ;;
-    *.chloggen)
+    .chloggen*)
         CHLOGGEN_FILE_PRESENT=1
         ;;
   esac
