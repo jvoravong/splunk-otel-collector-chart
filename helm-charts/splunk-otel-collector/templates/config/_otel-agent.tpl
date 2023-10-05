@@ -140,17 +140,6 @@ receivers:
           {{- else }}
           port: 10249
           {{- end }}
-      smartagent/kubernetes-scheduler:
-        {{- if eq .Values.distribution "openshift" }}
-        rule: type == "pod" && labels["app"] == "openshift-kube-scheduler" && labels["scheduler"] == "true"
-        {{- else }}
-        rule: type == "pod" && labels["k8s-app"] == "kube-scheduler"
-        {{- end }}
-        config:
-          extraDimensions:
-            metric_source: kubernetes-scheduler
-          port: 10251
-          type: kubernetes-scheduler
       {{- end}}
 
   kubeletstats:
