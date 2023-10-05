@@ -65,7 +65,7 @@ data:
       @type tail
       @label @CONCAT
       tag tail.containers.*
-      path {{ .Values.fluentd.path | default "/var/log/containers/*.log" }}
+      path {{ .Values.fluentd.config.path | default "/var/log/containers/*.log" }}
       {{- if .Values.fluentd.config.excludePath }}
       exclude_path {{ .Values.fluentd.config.excludePath | toJson }}
       {{- end }}
@@ -204,20 +204,6 @@ data:
         jq '.record | . + (.source | capture("^/var/log/containers/(?<k8s.pod.name>[^_]+)_(?<k8s.namespace.name>[^_]+)_(?<k8s.container.name>[-0-9a-z]+)-(?<container.id>[^.]+).log$")) | . + (.pods_source | capture("^/var/log/pods/[^_]+_[^_]+_(?<k8s.pod.uid>[^/]+)/[^._]+/[0-9]+.log$") // {}) | .sourcetype = ("kube:container:" + .["k8s.container.name"])'
       </filter>
 
-      {{- if .Values.autodetect.istio }}
-      # This filter prepares a temporary "istio_service_name" attribute, the same way as istio service name is generated:
-      # https://github.com/istio/istio/blob/77e00b47a61f0e995a29b33438c9dae7e8aace82/galley/pkg/config/analysis/analyzers/testdata/common/sidecar-injector-configmap.yaml#L110-L115
-      # The temporary "istio_service_name" attribute will be used to set "service.name" attribute in otel-collector
-      # if the pod doesn't have "app" label that should be used instead.
-      # Name of the k8s deployment (or another object owning the pod, if any) is taken from "k8s.pod.name" attribute
-      # using regex to filter out name suffix according to the k8s name generation rules:
-      # https://github.com/kubernetes/apimachinery/blob/ff522ab81c745a9ac5f7eeb7852fac134194a3b6/pkg/util/rand/rand.go#L92-L127
-      <filter tail.containers.**>
-        @type jq_transformer
-        jq '.record | . + (.istio_service_name = (.["k8s.pod.name"] // "istio-proxy" | (capture("^(?<owner_obj>.+?)-(?:(?:[0-9bcdf]+-)?[bcdfghjklmnpqrstvwxz2456789]{5}|[0-9]+)$") | .owner_obj) // .) + "." + (.["k8s.namespace.name"] // "default"))'
-      </filter>
-      {{- end }}
-
       @include output.transform.conf
 
       # create source and sourcetype
@@ -282,4 +268,40 @@ data:
         </format>
       </match>
     </label>
+
+  {{- /*
+    Default configuration files for CRI container engine.
+    Can be overridden for docker engine by prepare-fluentd-config container.
+  */}}
+  source.containers.parse.conf: |-
+    @type regexp
+    expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<partial_flag>[FP]))? (?<log>.*)$/
+    time_format {{ .Values.fluentd.config.containers.criTimeFormat }}
+  output.filter.conf: |-
+    # = handle cri/containerd multiline format =
+    <filter tail.containers.var.log.containers.**>
+      @type concat
+      key log
+      partial_key partial_flag
+      partial_value P
+      separator ''
+      timeout_label @SPLUNK
+    </filter>
+  output.transform.conf: |-
+    # extract pod_uid and container_name for CRIO runtime
+    # currently CRI does not produce log paths with all the necessary
+    # metadata to parse out pod, namespace, container_name, container_id.
+    # this may be resolved in the future by this issue: https://github.com/kubernetes/kubernetes/issues/58638#issuecomment-385126031
+    <filter tail.containers.var.log.pods.**>
+      @type jq_transformer
+      jq '.record | . + (.source | capture("/var/log/pods/(?<pod_uid>[^/]+)/(?<container_name>[^/]+)/(?<container_retry>[0-9]+).log")) | .sourcetype = ("kube:container:" + .container_name)'
+    </filter>
+    # rename pod_uid and container_name to otel semantics.
+    <filter tail.containers.var.log.pods.**>
+      @type record_transformer
+      <record>
+        k8s.pod.uid ${record["pod_uid"]}
+        k8s.container.name ${record["container_name"]}
+      </record>
+    </filter>
 {{- end }}

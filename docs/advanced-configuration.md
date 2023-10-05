@@ -26,6 +26,16 @@ splunkObservability:
 clusterName: my-k8s-cluster
 ```
 
+## Provide tokens as a secret
+
+Instead of having the tokens as clear text in the values, those can be provided via a secret that is created before deploying the chart. See [secret-splunk.yaml](https://github.com/signalfx/splunk-otel-collector-chart/blob/main/helm-charts/splunk-otel-collector/templates/secret-splunk.yaml) for the required fields.
+
+```yaml
+secret:
+  create: false
+  name: your-secret
+```
+
 ## Cloud provider
 
 Use the `cloudProvider` parameter to provide information about the cloud
@@ -40,7 +50,7 @@ This value can be omitted if none of the values apply.
 ## Kubernetes distribution
 
 Use the `distribution` parameter to provide information about underlying
-Kubernetes deployment. This parameter allows the connector to automatically
+Kubernetes deployment. This parameter allows the collector to automatically
 scrape additional metadata. The supported options are:
 
 - `aks` - Azure AKS
@@ -128,8 +138,6 @@ make sure to set `distribution` setting to `gke/autopilot`:
 distribution: gke/autopilot
 ```
 
-**NOTE:** Native OTel logs collection is not yet supported in GKE Autopilot.
-
 Sometimes Splunk OTel Collector agent daemonset can have [problems scheduling in
 Autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/daemonset#autopilot-ds-best-practices)
 If you run into these issues, you can assign the daemonset a higher [priority
@@ -156,6 +164,15 @@ the following line to your custom values.yaml:
 
 ```yaml
 priorityClassName: splunk-otel-agent-priority
+```
+
+## GKE ARM support
+
+We support ARM workloads on GKE with default configurations of this helm chart.
+Make sure to set the required `distribution` value to `gke`:
+
+```yaml
+distribution: gke
 ```
 
 ## EKS Fargate support
@@ -193,8 +210,11 @@ for the Fargate distribution has two primary differences between regular `eks` t
 
 ## Control Plane metrics
 
-By setting `agent.controlPlaneEnabled=true` the helm chart will set up the otel-collector agent to collect metrics from
-the control plane.
+By setting `agent.controlPlaneMetrics.{component}.enabled=true` the helm chart will set up the otel-collector agent to
+collect metrics from a particular control plane component. Most metrics can be collected from the control plane
+with no extra configuration, however, extra configuration steps must be taken to collect metrics from etcd (
+[see below](#setting-up-etcd-metrics)
+) due to TLS security requirements.
 
 To collect control plane metrics, the helm chart has the otel-collector agent on each node use the
 [receiver creator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/receivercreator/README.md)
@@ -226,10 +246,105 @@ The default configurations for the control plane receivers can be found in
 Here are the documentation links that contain configuration options and supported metrics information for each receiver
 used to collect metrics from the control plane.
 * [smartagent/coredns](https://docs.splunk.com/Observability/gdi/coredns/coredns.html)
+* [smartagent/etcd](https://docs.splunk.com/Observability/gdi/etcd/etcd.html)
 * [smartagent/kube-controller-manager](https://docs.splunk.com/Observability/gdi/kube-controller-manager/kube-controller-manager.html)
 * [smartagent/kubernetes-apiserver](https://docs.splunk.com/Observability/gdi/kubernetes-apiserver/kubernetes-apiserver.html)
 * [smartagent/kubernetes-proxy](https://docs.splunk.com/Observability/gdi/kubernetes-proxy/kubernetes-proxy.html)
 * [smartagent/kubernetes-scheduler](https://docs.splunk.com/Observability/gdi/kubernetes-scheduler/kubernetes-scheduler.html)
+
+### Setting up etcd metrics
+
+The etcd metrics cannot be collected out of box because etcd requires TLS authentication for communication. Below, we
+have supplied a couple methods for setting up TLS authentication between etcd and the otel-collector agent. The etcd TLS
+client certificate and key play a critical role in the security of the cluster, handle them with care and avoid storing
+them in unsecured locations. To limit unnecessary access to the etcd certificate and key, you should deploy the helm
+chart into a namespace that is isolated from other unrelated resources.
+
+#### Method 1: Deploy the helm chart with the etcd certificate and key as values
+The easiest way to set up the TLS authentication for etcd metrics is to retrieve the client certificate and key from an
+etcd pod and directly use them in the values.yaml (or using --set=). The helm chart will set up the rest. The helm chart
+will add the client certificate and key to a newly created kubernetes secret and then configure the etcd receiver to use
+them.
+
+You can get the contents of the certificate and key by running these commands. The path to the certificate and key can
+vary depending on your Kubernetes distribution.
+```bash
+# The steps for kubernetes and openshift are listed here.
+# For kubernetes:
+etcd_pod_name=$(kubectl get pods -n kube-system -l k8s-app=etcd-manager-events -o=name |  sed "s/^.\{4\}//" | head -n 1)
+kubectl exec -it -n kube-system {etcd_pod_name} cat /etc/kubernetes/pki/etcd-manager/etcd-clients-ca.crt
+kubectl exec -it -n kube-system {etcd_pod_name} cat /etc/kubernetes/pki/etcd-manager/etcd-clients-ca.key
+# For openshift:
+etcd_pod_name=$(kubectl get pods -n openshift-etcd -l k8s-app=etcd -o=name |  sed "s/^.\{4\}//" | head -n 1)
+kubectl exec -it -n openshift-etcd {etcd_pod_name} cat /etc/kubernetes/static-pod-certs/secrets/etcd-all-certs/etcd-serving-metrics-{etcd_pod_name}.crt
+kubectl exec -it -n openshift-etcd {etcd_pod_name} cat /etc/kubernetes/static-pod-certs/secrets/etcd-all-certs/etcd-serving-metrics-{etcd_pod_name}.key
+```
+
+Once you have the contents of your certificate and key, insert them into your values.yaml. Since the helm chart will
+create the secret, you must specify agent.controlPlaneMetrics.etcd.secret.create=true. Then install your helm chart.
+```yaml
+agent:
+  controlPlaneMetrics:
+    etcd:
+      enabled: true
+      secret:
+        create: true
+        # The PEM-format CA certificate for this client.
+        clientCert: |
+          -----BEGIN CERTIFICATE-----
+          ...
+          -----END CERTIFICATE-----
+        # The private key for this client.
+        clientKey: |
+          -----BEGIN RSA PRIVATE KEY-----
+          ...
+          -----END RSA PRIVATE KEY-----
+        # Optional. The CA cert that has signed the TLS cert.
+        # caFile: |
+```
+
+#### Method 2: Deploy the helm chart with a secret that contains the etcd certificate and key
+To set up the TLS authentication for etcd metrics with this method, the otel-collector agents will need access to a
+kubernetes secret that contains the etcd TLS client certificate and key. The name of this kubernetes secret must be
+supplied in the helm chart (.Values.agent.controlPlaneMetrics.etcd.secret.name). When installed, the helm chart will
+mount the specified kubernetes secret onto the /otel/etc/etcd directory of the otel-collector agent containers so the
+agent can use it.
+
+Here are the commands for creating a kubernetes secret named splunk-monitoring-etcd.
+```bash
+# The steps for kubernetes and openshift are listed here.
+# For kubernetes:
+etcd_pod_name=$(kubectl get pods -n kube-system -l k8s-app=etcd-manager-events -o=name |  sed "s/^.\{4\}//" | head -n 1)
+kubectl exec -it -n kube-system $etcd_pod_name -- cat /etc/kubernetes/pki/etcd-manager/etcd-clients-ca.crt > ./tls.crt
+kubectl exec -it -n kube-system $etcd_pod_name -- cat /etc/kubernetes/pki/etcd-manager/etcd-clients-ca.key > ./tls.key
+# For openshift:
+etcd_pod_name=$(kubectl get pods -n openshift-etcd -l k8s-app=etcd -o=name |  sed "s/^.\{4\}//" | head -n 1)
+kubectl exec -it -n openshift-etcd {etcd_pod_name} cat /etc/kubernetes/static-pod-certs/secrets/etcd-all-certs/etcd-serving-metrics-{etcd_pod_name}.crt > ./tls.crt
+kubectl exec -it -n openshift-etcd {etcd_pod_name} cat /etc/kubernetes/static-pod-certs/secrets/etcd-all-certs/etcd-serving-metrics-{etcd_pod_name}.key > ./tls.key
+
+# Create the the secret.
+# The input file names must be one of:  tls.crt, tls.key, cacert.pem
+kubectl create secret generic splunk-monitoring-etcd --from-file=./tls.crt --from-file=./tls.key
+# Optional. Include the CA cert that has signed the TLS cert.
+# kubectl create secret generic splunk-monitoring-etcd --from-file=./tls.crt --from-file=./tls.key --from-file=cacert.pem
+
+# Cleanup the local files.
+rm ./tls.crt
+rm ./tls.key
+```
+
+Once your kubernetes secret is created, specify the secret's name in values.yaml. Since the helm chart will be using the
+secret you created, make sure to set .Values.agent.controlPlaneMetrics.etc.secret.create=false. Then install your helm
+chart.
+```yaml
+agent:
+  controlPlaneMetrics:
+    etcd:
+      enabled: true
+      secret:
+        create: false
+        name: splunk-monitoring-etcd
+```
 
 ### Using custom configurations for nonstandard control plane components
 
@@ -262,39 +377,52 @@ agent:
 ### Known issues
 
 Kube Proxy
-* https://github.com/kubernetes/kops/issues/6472
-  * Problem
-    * When using a kops created Kubernetes cluster, a network connectivity issue has been reported that prevents proxy
-      metrics from being collected.
+* `10249: connect: connection refused`
+  * Issue
+    * When using a Kubernetes cluster with non-default configurations for kube proxy, there is a reported network connectivity issue that prevents the collection of proxy metrics.
   * Solution
-    * This issue can be addressed updating the kubeProxy metric bind address in the kops cluster spec:
-      * Set "kubeProxy.metricsBindAddress: 0.0.0.0" in the kops cluster spec.
-      * Deploy the change with "kops update cluster {cluster_name}" and "kops rolling-update cluster {cluster_name}".
+    * Update the kube proxy metric bind address (--metrics-bind-address) in the cluster spec.
+Set the kubeProxy metrics bind address to 0.0.0.0 or another value based on your Kubernetes cluster distribution.
+For this particular issue, the solution may vary depending on the Kubernetes cluster distribution. It is recommended to research what your Kubernetes distribution recommends for addressing this issue.
+  * Related Issue Links
+    * [kubernetes - Expose kube-proxy metrics on 0.0.0.0 by default ](https://github.com/kubernetes/kubernetes/pull/74300)
+    * [kubernetes - kube-proxy TLS support](https://github.com/kubernetes/kubernetes/issues/106870)
+    * [splunk-otel-collector-chart - Error connecting to kubernetes-proxy](https://github.com/signalfx/splunk-otel-collector-chart/issues/758)
+    * [kops - expose metrics-bind-address configuration for kube-proxy](https://github.com/kubernetes/kops/issues/6472)
+    * [prometheus - prometheus-kube-stack - kube-proxy metrics status with connection refused](https://github.com/prometheus-community/helm-charts/issues/977)
 
 ## Logs collection
 
-The helm chart currently utilizes [fluentd](https://docs.fluentd.org/) for Kubernetes logs
-collection. Logs collected with fluentd are sent through Splunk OTel Collector agent which
-does all the necessary metadata enrichment.
+The helm chart utilizes OpenTelemetry Collector for Kubernetes logs collection, but it also provides an option to use
+[fluentd](https://docs.fluentd.org/) which will be deployed as a sidecar. Logs collected with fluentd are sent through
+Splunk OTel Collector agent which does all the necessary metadata enrichment. The fluentd was initially introduced
+before the native OpenTelemetry logs collection was available. It will be deprecated and removed at some point in future.
 
-OpenTelemetry Collector also has
-[native functionality for logs collection](https://github.com/open-telemetry/opentelemetry-log-collection).
-This chart soon will be migrated from fluentd to the OpenTelemetry logs collection.
-
-You already have an option to use OpenTelemetry logs collection instead of fluentd.
-The following configuration can be used to achieve that:
+Use the following configuration to switch between Fluentd and OpenTelemetry logs collection:
 
 ```yaml
-logsEngine: otel
+logsEngine: <fluentd|otel>
 ```
 
-There are following known limitations of native OTel logs collection:
+### Difference between Fluentd and OpenTelemetry logs collection
 
-- `service.name` attribute will not be automatically constructed in istio environment.
-  This means that correlation between logs and traces will not work in Splunk Observability.
-  Logs collection with fluentd is still recommended if chart deployed with `autodetect.istio=true`.
-- Journald logs cannot be collected natively by Splunk OTel Collector yet.
-- Not yet supported in GKE Autopilot.
+#### Emitted logs
+
+There is almost no difference in the logs emitted by default by the two engines. The only difference is that
+Fluentd logs have an additional attribute called `fluent.tag`, which has a value similar to the `source` HEC field.
+
+#### Performance and resource usage
+
+Fluend logs collection requires an additional sidecar container responsible for collecting logs and sending them to the
+OTel collector container for further enrichment. No sidecar containers are required for the OpenTelemetry logs collection.
+OpenTelemetry logs collection is multi-threaded, so it can handle more logs per second without additional configuration.
+Our internal benchmarks show that OpenTelemetry logs collection provides higher throughput with less resource usage.
+
+#### Configuration
+
+Fluentd logs collection is configured using the `fluentd.config` section in values.yaml. OpenTelemetry logs
+collection is configured using the `logsCollection` section in values.yaml. The configuration options are
+different between the two engines, but they provide similar functionality.
 
 ### Add log files from Kubernetes host machines/volumes
 
@@ -363,10 +491,21 @@ logsCollection:
       - name: docker
         priority: info
       - name: containerd
-       priority: info
+        priority: info
     # Route journald logs to its own Splunk Index by specifying the index value below, else leave it blank. Please make sure the index exist in Splunk and is configured to receive HEC traffic (Not applicable to Splunk Observability).
     index: ""
 ```
+
+### Managing Log Ingestion by Using Annotations
+
+Manage Splunk OTel Collector Logging with these supported annotations.
+
+* Use `splunk.com/index` annotation on pod and/or namespace to tell which Splunk platform indexes to ingest to. Pod annotation will take precedence over namespace annotation when both are annotated.
+  For example, the following command will make logs from `kube-system` namespace to be sent to `k8s_events` index: `kubectl annotate namespace kube-system splunk.com/index=k8s_events`
+* Filter logs using pod and/or namespace annotation
+  * If `logsCollection.containers.useSplunkIncludeAnnotation` is `false` (default: false), set `splunk.com/exclude` annotation to `true` on pod and/or namespace to exclude its logs from ingested.
+  * If `logsCollection.containers.useSplunkIncludeAnnotation` is `true` (default: false), set `splunk.com/include` annotation to `true` on pod and/or namespace to only include its logs from ingested. All other logs will be ignored.
+* Use `splunk.com/sourcetype` annotation on pod to overwrite `sourcetype` field. If not set, it is dynamically generated to be `kube:container:CONTAINER_NAME`.
 
 ### Performance of native OpenTelemetry logs collection
 
@@ -387,11 +526,90 @@ Here is the summary of performance benchmarks run internally.
 The data pipelines for these test runs involved reading container logs as they are being written, then parsing filename for metadata, enriching it with kubernetes metadata, reformatting data structure, and sending them (without compression) to Splunk HEC endpoint.
 
 ## Running the container in non-root user mode
+Collecting logs often requires reading log files that are owned by the root user. By default, the container runs with `securityContext.runAsUser = 0` which gives the `root` user permission to read those files.
+To run the container in `non-root` user mode, set `.agent.securityContext`. The log data permissions will be adjusted to match the securityContext configurations. For instance:
+```yaml
+agent:
+  securityContext:
+     runAsUser: 20000
+     runAsGroup: 20000
+```
 
-Collecting logs often requires reading log files that are owned by the root user. By default, the container runs with `securityContext.runAsUser = 0` which gives the `root` user permission to read those files. To run the container in `non-root` user mode, set `.agent.securityContext` to `20000` to cause the container to run the required file system operations as UID and GID `20000`. (it can be any other UID & GUI)
+Note: Running the collector agent for log collection in non-root mode is not currently supported in CRI-O and OpenShift environments at this time, for more details see the
+[related GitHub feature request issue](https://github.com/signalfx/splunk-otel-collector-chart/issues/891).
 
-Note: `cri-o` container runtime did not work during internal testing.
+## Network explorer
+[Network explorer](network-explorer-architecture.md) allows you to collect network telemetry for ingest and analysis.  This telemetry is sent to the Open Telemetry Collector Gateway.
+To enable the network explorer, set the `enabled` flag to `true`
+```yaml
+networkExplorer:
+  enabled: true
+```
 
+Note: Enabling network explorer will automatically enable the Open Telemetry Collector Gateway.
+
+### Prerequisites
+Network Explorer is only supported in Kubernetes-based environments on Linux hosts: RedHat Linux 7.6+, Ubuntu 16.04+, Debian Stretch+, Amazon Linux 2, Google COS.
+
+### Modifying the reducer footprint
+The reducer is a single pod per Kubernetes cluster. If your cluster contains a large number of pods, nodes, and services, you can increase the resources allocated to it.
+
+The reducer processes telemetry in multiple stages, with each stage partitioned into one or more shards, where each shard is a separate thread. Increasing the number of shards in each stage expands the capacity of the reducer.  There are three stages: ingest, matching, and aggregation.  You can set between 1-32 shards for each stage.  There is 1 shard per reducer stage by default.
+
+The following example sets the reducer to use 4 shards per stage.
+```yaml
+networkExplorer:
+  reducer:
+    ingestShards: 4
+    matchingShards: 4
+    aggregationShards: 4
+```
+
+### Customize network telemetry generated by Network Explorer
+Metrics can be disabled, either singly or entire categories.  See the [values.yaml](https://github.com/signalfx/splunk-otel-collector-chart/blob/main/helm-charts/splunk-otel-collector/values.yaml) for a complete list of categories and metrics.
+
+To disable an entire category, give the category name, followed by `.all`.
+
+```yaml
+networkExplorer:
+  reducer:
+    disableMetrics:
+      - tcp.all
+```
+
+Individual metrics can be disabled by their names.
+
+```yaml
+networkExplorer:
+  reducer:
+    disableMetrics:
+      - tcp.bytes
+```
+
+You can mix categories and names. For example, this will disable all `http` metrics and the `udp.bytes` metric.
+```yaml
+networkExplorer:
+  reducer:
+    disableMetrics:
+      - http.all
+      - udp.bytes
+```
+
+`enableMetrics` allow you to turn back on metrics that were previously disabled.
+
+Note: The `disableMetrics `flag is evaluated before the `enableMetrics` flag.  This allows you to disable an entire category, then re-enable the individual metrics in that category that you are interested in.
+
+This example disables all internal and http metrics but re-enables the `ebpf_net.collector_health` metric.
+```yaml
+networkExplorer:
+  reducer:
+    disableMetrics:
+    - http.all
+    - ebpf_net.all
+
+    enableMetrics:
+    - ebpf_net.collector_health
+```
 ## Additional telemetry sources
 
 Use `autodetect` config option to enable additional telemetry sources.
@@ -417,6 +635,142 @@ autodetect:
   prometheus: true
 ```
 
+## Using feature gates
+
+Enable or disable features of the otel-collector agent, clusterReceiver, and gateway (respectively) using feature
+gates. Use the agent.featureGates, clusterReceiver.featureGates, and gateway.featureGates configs to enable or disable
+features, these configs will be used to populate the otelcol binary startup argument "--feature-gates". For more
+details see the
+[feature gate documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/featuregate/README.md).
+
+Helm Install Example:
+```bash
+helm install {name} --set agent.featureGates=+feature1 --set clusterReceiver.featureGates=feature2 --set gateway.featureGates=-feature2 {other_flags}
+```
+Would result in the agent having feature1 enabled, the clusterReceiver having feature2 enabled, and the gateway having
+feature2 disabled.
+
 ## Override underlying OpenTelemetry agent configuration
 
 If you want to use your own OpenTelemetry Agent configuration, you can override it by providing a custom configuration in the `agent.config` parameter in the values.yaml, which will be merged into the default agent configuration, list parts of the configuration (for example, `service.pipelines.logs.processors`) to be fully re-defined.
+
+## Manually setting Pod Security Policy
+
+Support of Pod Security Policies (PSP) was [removed](https://kubernetes.io/docs/concepts/security/pod-security-policy/)
+in Kubernetes 1.25. If you still rely on PSPs in an older cluster, you can add them manually along with the helm chart
+installation.
+
+1. Run the following command to install the PSP (don't forget to add `--namespace` kubectl argument if needed):
+
+```
+cat <<EOF | kubectl apply -f -
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: splunk-otel-collector-psp
+  labels:
+    app: splunk-otel-collector-psp
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName:  'runtime/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  hostNetwork: true
+  hostIPC: false
+  hostPID: false
+  volumes:
+  - 'configMap'
+  - 'emptyDir'
+  - 'hostPath'
+  - 'secret'
+  runAsUser:
+    rule: 'RunAsAny'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+EOF
+```
+
+2. Add the following custom ClusterRole rule in your values.yaml file along with all other required fields like
+`clusterName`, `splunkObservability` or `splunkPlatform`:
+
+```yaml
+rbac:
+  customRules:
+    - apiGroups:     [extensions]
+      resources:     [podsecuritypolicies]
+      verbs:         [use]
+      resourceNames: [splunk-otel-collector-psp]
+```
+
+3. Install the helm chart (assuming your custom values.yaml is called `my_values.yaml`):
+
+```
+helm install my-splunk-otel-collector -f my_values.yaml splunk-otel-collector-chart/splunk-otel-collector
+```
+
+## Data Persistence
+
+By default, without any configuration, data is queued in memory only. When data cannot be sent it is retried a few times (up to 5 mins. by default) and then dropped.
+
+If for any reason, the collector is restarted in this period, the queued data will be gone.
+
+If you want the queue to be persisted on disk across collector restarts, set `splunkPlatform.sendingQueue.persistentQueue.enabled` to enable support for logs, metrics and traces.
+
+By default, data is persisted in `/var/addon/splunk/exporter_queue` directory.
+Override this behaviour by setting `splunkPlatform.sendingQueue.persistentQueue.storagePath` option.
+
+Check [Data Persistence in the OpenTelemetry Collector
+](https://community.splunk.com/t5/Community-Blog/Data-Persistence-in-the-OpenTelemetry-Collector/ba-p/624583) for detailed explantion.
+
+Note: Data Persistence is only applicable for agent daemonset.
+
+Use following in values.yaml to disable data persistense for logs or metrics or traces:
+
+```yaml
+agent:
+  config:
+    exporters:
+       splunk_hec/platform_logs:
+         sending_queue:
+           storage: null
+```
+or
+```yaml
+agent:
+  config:
+    exporters:
+       splunk_hec/platform_metrics:
+         sending_queue:
+           storage: null
+```
+or
+```yaml
+agent:
+  config:
+    exporters:
+       splunk_hec/platform_traces:
+         sending_queue:
+           storage: null
+```
+
+### Support for persistent queue
+
+* `GKE/Autopilot` and `EKS/Fargate` support
+  * Both of the above distributions doesn't allow volume mounts, as they are kind of `serverless` and we don't manage the underlying infrastructure.
+  * Persistent buffering is not supported for them, as directory needs to be mounted via `hostPath`.
+  * Refer [aws/fargate](https://docs.aws.amazon.com/eks/latest/userguide/fargate.html) and [gke/autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-security#built-in-security).
+* Gateway support
+  * The filestorage extention acquires an exclusive lock for the queue directory.
+  * It is not possible to run the persistent buffering if there are multiple replicas of a pod and `gateway` runs 3 replicas by default.
+  * Even if support is somehow provided, only one of the pods will be able to acquire the lock and run, while the others will be blocked and unable to operate.
+* Cluster Receiver support
+  * Cluster receiver is a 1-replica deployment of Open-temlemetry collector.
+  * As any available node can be selected by the Kubernetes control plane to run the cluster receiver pod (unless we explicitly specify the `clusterReceiver.nodeSelector` to pin the pod to a specific node), `hostPath` or `local` volume mounts wouldn't work for such envrionments.
+  * Data Persistence is currently not applicable to the k8s cluster metrics and k8s events.

@@ -1,5 +1,5 @@
 {{ $clusterReceiver := fromYaml (include "splunk-otel-collector.clusterReceiver" .) }}
-{{- if and $clusterReceiver.enabled (eq (include "splunk-otel-collector.metricsEnabled" .) "true") }}
+{{- if eq (include "splunk-otel-collector.clusterReceiverEnabled" .) "true" }}
 apiVersion: apps/v1
 {{- /*
 eks/fargate distributions use a two-replica StatefulSet instead of a single node deployment.
@@ -8,7 +8,8 @@ The second replica monitors the first replica's kubelet and the cluster.
 */}}
 kind: {{- if eq (include "splunk-otel-collector.distribution" .) "eks/fargate" }} StatefulSet {{- else }} Deployment {{- end }}
 metadata:
-  name: {{ template "splunk-otel-collector.fullname" . }}-k8s-cluster-receiver
+  {{- /* StatefulSet names must be truncated or the `statefulset.kubernetes.io/pod-name` label value will be too long */}}
+  name: {{- if eq (include "splunk-otel-collector.distribution" .) "eks/fargate" }} {{ template "splunk-otel-collector.clusterReceiverTruncatedName" . }} {{- else }} {{ template "splunk-otel-collector.fullname" . }}-k8s-cluster-receiver {{- end }}
   labels:
     {{- include "splunk-otel-collector.commonLabels" . | nindent 4 }}
     app: {{ template "splunk-otel-collector.name" . }}
@@ -78,7 +79,7 @@ spec:
       {{- end }}
       {{- if $clusterReceiver.securityContext }}
       securityContext:
-        {{ toYaml $clusterReceiver.securityContext | nindent 8 }}
+        {{- include "splunk-otel-collector.securityContext" (dict "isWindows" .Values.isWindows "securityContext" $clusterReceiver.securityContext) | nindent 8 }}
       {{- end }}
       {{- if eq (include "splunk-otel-collector.distribution" .) "eks/fargate" }}
       initContainers:
@@ -118,6 +119,9 @@ spec:
         {{- else }}
         - --config=/conf/relay.yaml
         {{- end }}
+        {{- end }}
+        {{- if .Values.clusterReceiver.featureGates }}
+        - --feature-gates={{ .Values.clusterReceiver.featureGates }}
         {{- end }}
         image: {{ template "splunk-otel-collector.image.otelcol" . }}
         imagePullPolicy: {{ .Values.image.otelcol.pullPolicy }}
@@ -179,12 +183,20 @@ spec:
         resources:
           {{- toYaml $clusterReceiver.resources | nindent 10 }}
         volumeMounts:
+        {{- if or .Values.splunkPlatform.clientCert .Values.splunkPlatform.clientKey .Values.splunkPlatform.caFile }}
+        - name: secret
+          mountPath: /otel/etc
+          readOnly: true
+        {{- end }}
         - mountPath: {{ .Values.isWindows | ternary "C:\\conf" "/conf" }}
           name: collector-configmap
         {{- if eq (include "splunk-otel-collector.distribution" .) "eks/fargate" }}
         - mountPath: /splunk-messages
           name: messages
         {{- end }}
+        - mountPath: /usr/lib/splunk-otel-collector/agent-bundle/run/collectd
+          name: run-collectd
+          readOnly: false
         {{- if $clusterReceiver.extraVolumeMounts }}
         {{- toYaml $clusterReceiver.extraVolumeMounts | nindent 8 }}
         {{- end }}
@@ -196,6 +208,14 @@ spec:
           items:
             - key: relay
               path: relay.yaml
+      - name: run-collectd
+        emptyDir:
+          sizeLimit: 25Mi
+      {{- if or .Values.splunkPlatform.clientCert .Values.splunkPlatform.clientKey .Values.splunkPlatform.caFile }}
+      - name: secret
+        secret:
+          secretName: {{ template "splunk-otel-collector.secret" . }}
+      {{- end }}
       {{- if eq (include "splunk-otel-collector.distribution" .) "eks/fargate" }}
       - name: init-eks-fargate-cluster-receiver-script
         configMap:

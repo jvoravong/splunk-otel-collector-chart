@@ -33,48 +33,11 @@ receivers:
 
 # By default k8sattributes, memory_limiter and batch processors enabled.
 processors:
-  k8sattributes:
-    pod_association:
-      - from: resource_attribute
-        name: k8s.pod.uid
-      - from: resource_attribute
-        name: k8s.pod.ip
-      - from: resource_attribute
-        name: ip
-      - from: connection
-      - from: resource_attribute
-        name: host.name
-    extract:
-      metadata:
-        - k8s.namespace.name
-        - k8s.node.name
-        - k8s.pod.name
-        - k8s.pod.uid
-      annotations:
-        - key: splunk.com/sourcetype
-          from: pod
-        - key: {{ include "splunk-otel-collector.filterAttr" . }}
-          tag_name: {{ include "splunk-otel-collector.filterAttr" . }}
-          from: namespace
-        - key: {{ include "splunk-otel-collector.filterAttr" . }}
-          tag_name: {{ include "splunk-otel-collector.filterAttr" . }}
-          from: pod
-        - key: splunk.com/index
-          tag_name: com.splunk.index
-          from: namespace
-        - key: splunk.com/index
-          tag_name: com.splunk.index
-          from: pod
-        {{- include "splunk-otel-collector.addExtraAnnotations" . | nindent 8 }}
-      {{- if or .Values.extraAttributes.podLabels .Values.extraAttributes.fromLabels }}
-      labels:
-        {{- range .Values.extraAttributes.podLabels }}
-        - key: {{ . }}
-        {{- end }}
-        {{- include "splunk-otel-collector.addExtraLabels" . | nindent 8 }}
-      {{- end }}
-
+  {{- include "splunk-otel-collector.k8sAttributesProcessor" . | nindent 2 }}
   {{- include "splunk-otel-collector.resourceLogsProcessor" . | nindent 2 }}
+  {{- if .Values.autodetect.istio }}
+  {{- include "splunk-otel-collector.transformLogsProcessor" . | nindent 2 }}
+  {{- end }}
   {{- include "splunk-otel-collector.filterLogsProcessors" . | nindent 2 }}
 
   {{- include "splunk-otel-collector.otelMemoryLimiterConfig" . | nindent 2 }}
@@ -99,6 +62,8 @@ processors:
         key: k8s.namespace.name
         value: "${K8S_NAMESPACE}"
 
+  # It's important to put this processor after resourcedetection to make sure that
+  # k8s.name.cluster attribute is always set to "{{ .Values.clusterName }}".
   resource/add_cluster_name:
     attributes:
       - action: upsert
@@ -129,16 +94,26 @@ exporters:
     ingest_url: {{ include "splunk-otel-collector.o11yIngestUrl" . }}
     api_url: {{ include "splunk-otel-collector.o11yApiUrl" . }}
     access_token: ${SPLUNK_OBSERVABILITY_ACCESS_TOKEN}
+    sending_queue:
+      num_consumers: 32
   {{- end }}
 
   {{- if (eq (include "splunk-otel-collector.o11yTracesEnabled" .) "true") }}
   {{- include "splunk-otel-collector.otelSapmExporter" . | nindent 2 }}
+    sending_queue:
+      num_consumers: 32
   {{- end }}
 
   {{- if (eq (include "splunk-otel-collector.o11yLogsOrProfilingEnabled" .) "true") }}
   splunk_hec/o11y:
     endpoint: {{ include "splunk-otel-collector.o11yIngestUrl" . }}/v1/log
     token: "${SPLUNK_OBSERVABILITY_ACCESS_TOKEN}"
+    log_data_enabled: {{ .Values.splunkObservability.logsEnabled }}
+    profiling_data_enabled: {{ .Values.splunkObservability.profilingEnabled }}
+    sending_queue:
+      num_consumers: 32
+    # Temporary disable compression until 0.68.0 to workaround a compression bug
+    disable_compression: true
   {{- end }}
 
   {{- if (eq (include "splunk-otel-collector.platformLogsEnabled" .) "true") }}
@@ -149,6 +124,9 @@ exporters:
   {{- include "splunk-otel-collector.splunkPlatformMetricsExporter" . | nindent 2 }}
   {{- end }}
 
+  {{- if (eq (include "splunk-otel-collector.platformTracesEnabled" .) "true") }}
+  {{- include "splunk-otel-collector.splunkPlatformTracesExporter" . | nindent 2 }}
+  {{- end }}
 service:
   telemetry:
     metrics:
@@ -164,14 +142,14 @@ service:
   # The default pipelines should not need to be changed. You can add any custom pipeline instead.
   # In order to disable a default pipeline just set it to `null` in gateway.config overrides.
   pipelines:
-    {{- if (eq (include "splunk-otel-collector.o11yTracesEnabled" $) "true") }}
+    {{- if (eq (include "splunk-otel-collector.tracesEnabled" $) "true") }}
     # default traces pipeline
     traces:
       receivers: [otlp, jaeger, zipkin]
       processors:
         - memory_limiter
-        - batch
         - k8sattributes
+        - batch
         - resource/add_cluster_name
         {{- if .Values.extraAttributes.custom }}
         - resource/add_custom_attrs
@@ -179,7 +157,13 @@ service:
         {{- if .Values.environment }}
         - resource/add_environment
         {{- end }}
-      exporters: [sapm]
+      exporters:
+        {{- if (eq (include "splunk-otel-collector.o11yTracesEnabled" .) "true") }}
+        - sapm
+        {{- end }}
+        {{- if (eq (include "splunk-otel-collector.platformTracesEnabled" .) "true") }}
+        - splunk_hec/platform_traces
+        {{- end }}
     {{- end }}
 
     {{- if (eq (include "splunk-otel-collector.metricsEnabled" .) "true") }}
@@ -192,6 +176,13 @@ service:
         - resource/add_cluster_name
         {{- if .Values.extraAttributes.custom }}
         - resource/add_custom_attrs
+        {{- end }}
+        {{/*
+        The attribute `deployment.environment` is not being set on metrics sent to Splunk Observability because it's already synced as the `sf_environment` property.
+        More details: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter#traces-configuration-correlation-only
+        */}}
+        {{- if (and .Values.splunkPlatform.metricsEnabled .Values.environment) }}
+        - resource/add_environment
         {{- end }}
       exporters:
         {{- if (eq (include "splunk-otel-collector.o11yMetricsEnabled" .) "true") }}
@@ -217,8 +208,11 @@ service:
       processors:
         - memory_limiter
         - k8sattributes
-        - batch
         - filter/logs
+        - batch
+        {{- if .Values.autodetect.istio }}
+        - transform/istio_service_name
+        {{- end }}
         - resource/logs
       exporters:
         {{- if (eq (include "splunk-otel-collector.o11yLogsOrProfilingEnabled" .) "true") }}
@@ -240,7 +234,7 @@ service:
         - resourcedetection
         - resource/add_cluster_name
       exporters:
-        {{- if (eq (include "splunk-otel-collector.o11yMetricsEnabled" .) "true") }}
+        {{- if (eq (include "splunk-otel-collector.splunkO11yEnabled" .) "true") }}
         - signalfx
         {{- end }}
         {{- if (eq (include "splunk-otel-collector.platformMetricsEnabled" $) "true") }}

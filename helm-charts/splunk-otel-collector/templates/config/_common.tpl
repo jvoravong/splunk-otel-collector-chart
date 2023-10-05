@@ -5,7 +5,7 @@ Common config for the otel-collector memory_limiter processor
 memory_limiter:
   # check_interval is the time between measurements of memory usage.
   check_interval: 2s
-  # By default limit_mib is set to 80% of container memory limit
+  # By default limit_mib is set to 90% of container memory limit
   limit_mib: ${SPLUNK_MEMORY_LIMIT_MIB}
 {{- end }}
 
@@ -65,16 +65,14 @@ resourcedetection:
     # Note: Kubernetes distro detectors need to come first so they set the proper cloud.platform
     # before it gets set later by the cloud provider detector.
     - env
-    {{- if hasPrefix "gke" (include "splunk-otel-collector.distribution" .) }}
-    - gke
+    {{- if or (hasPrefix "gke" (include "splunk-otel-collector.distribution" .)) (eq (include "splunk-otel-collector.cloudProvider" .) "gcp") }}
+    - gcp
     {{- else if hasPrefix "eks" (include "splunk-otel-collector.distribution" .) }}
     - eks
     {{- else if eq (include "splunk-otel-collector.distribution" .) "aks" }}
     - aks
     {{- end }}
-    {{- if eq (include "splunk-otel-collector.cloudProvider" .) "gcp" }}
-    - gce
-    {{- else if eq (include "splunk-otel-collector.cloudProvider" .) "aws" }}
+    {{- if eq (include "splunk-otel-collector.cloudProvider" .) "aws" }}
     - ec2
     {{- else if eq (include "splunk-otel-collector.cloudProvider" .) "azure" }}
     - azure
@@ -84,6 +82,60 @@ resourcedetection:
     - system
   override: true
   timeout: 10s
+{{- end }}
+
+{{/*
+Common config for K8s attributes processor adding k8s metadata to resource attributes.
+*/}}
+{{- define "splunk-otel-collector.k8sAttributesProcessor" -}}
+k8sattributes:
+  pod_association:
+    - sources:
+      - from: resource_attribute
+        name: k8s.pod.uid
+    - sources:
+      - from: resource_attribute
+        name: k8s.pod.ip
+    - sources:
+      - from: resource_attribute
+        name: ip
+    - sources:
+      - from: connection
+    - sources:
+      - from: resource_attribute
+        name: host.name
+  extract:
+    metadata:
+      - k8s.namespace.name
+      - k8s.node.name
+      - k8s.pod.name
+      - k8s.pod.uid
+      - container.id
+      - container.image.name
+      - container.image.tag
+    annotations:
+      - key: splunk.com/sourcetype
+        from: pod
+      - key: {{ include "splunk-otel-collector.filterAttr" . }}
+        tag_name: {{ include "splunk-otel-collector.filterAttr" . }}
+        from: namespace
+      - key: {{ include "splunk-otel-collector.filterAttr" . }}
+        tag_name: {{ include "splunk-otel-collector.filterAttr" . }}
+        from: pod
+      - key: splunk.com/index
+        tag_name: com.splunk.index
+        from: namespace
+      - key: splunk.com/index
+        tag_name: com.splunk.index
+        from: pod
+      {{- include "splunk-otel-collector.addExtraAnnotations" . | nindent 6 }}
+    {{- if or .Values.extraAttributes.podLabels .Values.extraAttributes.fromLabels }}
+    labels:
+      {{- range .Values.extraAttributes.podLabels }}
+      - key: {{ . }}
+      {{- end }}
+      {{- include "splunk-otel-collector.addExtraLabels" . | nindent 6 }}
+    {{- end }}
 {{- end }}
 
 {{/*
@@ -104,22 +156,9 @@ resource/logs:
       action: delete
     - key: {{ include "splunk-otel-collector.filterAttr" . }}
       action: delete
-    {{- if .Values.autodetect.istio }}
-    - key: service.name
-      from_attribute: k8s.pod.labels.app
-      action: insert
-    - key: service.name
-      from_attribute: istio_service_name
-      action: insert
-    - key: istio_service_name
-      action: delete
-    {{- end }}
     {{- if .Values.splunkPlatform.fieldNameConvention.renameFieldsSck }}
     - key: container_name
       from_attribute: k8s.container.name
-      action: upsert
-    - key: cluster_name
-      from_attribute: k8s.cluster.name
       action: upsert
     - key: container_id
       from_attribute: container.id
@@ -133,6 +172,9 @@ resource/logs:
     - key: namespace
       from_attribute: k8s.namespace.name
       action: upsert
+    - key: label_app
+      from_attribute: k8s.pod.labels.app
+      action: upsert
     {{- range $_, $label := .Values.extraAttributes.podLabels }}
     - key: {{ printf "label_%s" $label }}
       from_attribute: {{ printf "k8s.pod.labels.%s" $label }}
@@ -141,8 +183,6 @@ resource/logs:
     {{- if not .Values.splunkPlatform.fieldNameConvention.keepOtelConvention }}
     - key: k8s.container.name
       action: delete
-    - key: k8s.cluster.name
-      action: delete
     - key: container.id
       action: delete
     - key: k8s.pod.name
@@ -150,6 +190,8 @@ resource/logs:
     - key: k8s.pod.uid
       action: delete
     - key: k8s.namespace.name
+      action: delete
+    - key: k8s.pod.labels.app
       action: delete
     {{- range $_, $label := .Values.extraAttributes.podLabels }}
     - key: {{ printf "k8s.pod.labels.%s" $label }}
@@ -160,6 +202,26 @@ resource/logs:
 {{- end }}
 
 {{/*
+The transform processor adds service.name attribute to logs the same way as it's done by istio for the generated traces
+https://github.com/istio/istio/blob/6237cb4e63cf9a332327cc0a815d6b46257e6f8a/pkg/config/analysis/analyzers/testdata/common/sidecar-injector-configmap.yaml#L110-L115
+This enables the correlation between logs and traces in Splunk Observability Cloud.
+*/}}
+{{- define "splunk-otel-collector.transformLogsProcessor" -}}
+transform/istio_service_name:
+  error_mode: ignore
+  log_statements:
+    - context: resource
+      statements:
+        - set(attributes["service.name"], Concat([attributes["k8s.pod.labels.app"], attributes["k8s.namespace.name"]], ".")) where attributes["service.name"] == nil and attributes["k8s.pod.labels.app"] != nil and attributes["k8s.namespace.name"] != nil
+        - set(cache["owner_name"], attributes["k8s.pod.name"]) where attributes["service.name"] == nil and attributes["k8s.pod.name"] != nil
+        # Name of the object owning the pod is taken from "k8s.pod.name" attribute by striping the pod suffix according
+        # to the k8s name generation rules (we don't want to put pressure on the k8s API server to get the owner name):
+        # https://github.com/kubernetes/apimachinery/blob/ff522ab81c745a9ac5f7eeb7852fac134194a3b6/pkg/util/rand/rand.go#L92-L127
+        - replace_pattern(cache["owner_name"], "^(.+?)-(?:(?:[0-9bcdf]+-)?[bcdfghjklmnpqrstvwxz2456789]{5}|[0-9]+)$$", "$$1") where attributes["service.name"] == nil and cache["owner_name"] != nil
+        - set(attributes["service.name"], Concat([cache["owner_name"], attributes["k8s.namespace.name"]], ".")) where attributes["service.name"] == nil and cache["owner_name"] != nil and attributes["k8s.namespace.name"] != nil
+{{- end }}
+
+{{/*
 Filter logs processor
 */}}
 {{- define "splunk-otel-collector.filterLogsProcessors" -}}
@@ -167,6 +229,7 @@ Filter logs processor
 filter/logs:
   logs:
     {{ .Values.logsCollection.containers.useSplunkIncludeAnnotation | ternary "include" "exclude" }}:
+      match_type: strict
       resource_attributes:
         - key: {{ include "splunk-otel-collector.filterAttr" . }}
           value: "true"
@@ -184,8 +247,10 @@ splunk_hec/platform_logs:
   max_connections: {{ .Values.splunkPlatform.maxConnections }}
   disable_compression: {{ .Values.splunkPlatform.disableCompression }}
   timeout: {{ .Values.splunkPlatform.timeout }}
+  idle_conn_timeout: {{ .Values.splunkPlatform.idleConnTimeout }}
   splunk_app_name: {{ .Chart.Name }}
   splunk_app_version: {{ .Chart.Version }}
+  profiling_data_enabled: false
   tls:
     insecure_skip_verify: {{ .Values.splunkPlatform.insecureSkipVerify }}
     {{- if .Values.splunkPlatform.clientCert }}
@@ -197,10 +262,22 @@ splunk_hec/platform_logs:
     {{- if .Values.splunkPlatform.caFile }}
     ca_file: /otel/etc/splunk_platform_hec_ca_file
     {{- end }}
+  retry_on_failure:
+    enabled: {{ .Values.splunkPlatform.retryOnFailure.enabled }}
+    initial_interval: {{ .Values.splunkPlatform.retryOnFailure.initialInterval }}
+    max_interval: {{ .Values.splunkPlatform.retryOnFailure.maxInterval }}
+    max_elapsed_time: {{ .Values.splunkPlatform.retryOnFailure.maxElapsedTime }}
+  sending_queue:
+    enabled:  {{ .Values.splunkPlatform.sendingQueue.enabled }}
+    num_consumers: {{ .Values.splunkPlatform.sendingQueue.numConsumers }}
+    queue_size: {{ .Values.splunkPlatform.sendingQueue.queueSize }}
+    {{- if .addPersistentStorage }}
+    storage: file_storage/persistent_queue
+    {{- end }}
 {{- end }}
 
 {{/*
-Splunk Platform Logs exporter
+Splunk Platform Metrics exporter
 */}}
 {{- define "splunk-otel-collector.splunkPlatformMetricsExporter" -}}
 splunk_hec/platform_metrics:
@@ -211,6 +288,7 @@ splunk_hec/platform_metrics:
   max_connections: {{ .Values.splunkPlatform.maxConnections }}
   disable_compression: {{ .Values.splunkPlatform.disableCompression }}
   timeout: {{ .Values.splunkPlatform.timeout }}
+  idle_conn_timeout: {{ .Values.splunkPlatform.idleConnTimeout }}
   splunk_app_name: {{ .Chart.Name }}
   splunk_app_version: {{ .Chart.Version }}
   tls:
@@ -223,6 +301,58 @@ splunk_hec/platform_metrics:
     {{- end }}
     {{- if .Values.splunkPlatform.caFile }}
     ca_file: /otel/etc/splunk_platform_hec_ca_file
+    {{- end }}
+  retry_on_failure:
+    enabled: {{ .Values.splunkPlatform.retryOnFailure.enabled }}
+    initial_interval: {{ .Values.splunkPlatform.retryOnFailure.initialInterval }}
+    max_interval: {{ .Values.splunkPlatform.retryOnFailure.maxInterval }}
+    max_elapsed_time: {{ .Values.splunkPlatform.retryOnFailure.maxElapsedTime }}
+  sending_queue:
+    enabled:  {{ .Values.splunkPlatform.sendingQueue.enabled }}
+    num_consumers: {{ .Values.splunkPlatform.sendingQueue.numConsumers }}
+    queue_size: {{ .Values.splunkPlatform.sendingQueue.queueSize }}
+    {{- if .addPersistentStorage }}
+    storage: file_storage/persistent_queue
+    {{- end }}
+{{- end }}
+
+{{/*
+Splunk Platform Traces exporter
+*/}}
+{{- define "splunk-otel-collector.splunkPlatformTracesExporter" -}}
+splunk_hec/platform_traces:
+  endpoint: {{ .Values.splunkPlatform.endpoint | quote }}
+  token: "${SPLUNK_PLATFORM_HEC_TOKEN}"
+  index: {{ .Values.splunkPlatform.tracesIndex | quote }}
+  source: {{ .Values.splunkPlatform.source | quote }}
+  max_connections: {{ .Values.splunkPlatform.maxConnections }}
+  disable_compression: {{ .Values.splunkPlatform.disableCompression }}
+  timeout: {{ .Values.splunkPlatform.timeout }}
+  idle_conn_timeout: {{ .Values.splunkPlatform.idleConnTimeout }}
+  splunk_app_name: {{ .Chart.Name }}
+  splunk_app_version: {{ .Chart.Version }}
+  tls:
+    insecure_skip_verify: {{ .Values.splunkPlatform.insecureSkipVerify }}
+    {{- if .Values.splunkPlatform.clientCert }}
+    cert_file: /otel/etc/splunk_platform_hec_client_cert
+    {{- end }}
+    {{- if .Values.splunkPlatform.clientKey  }}
+    key_file: /otel/etc/splunk_platform_hec_client_key
+    {{- end }}
+    {{- if .Values.splunkPlatform.caFile }}
+    ca_file: /otel/etc/splunk_platform_hec_ca_file
+    {{- end }}
+  retry_on_failure:
+    enabled: {{ .Values.splunkPlatform.retryOnFailure.enabled }}
+    initial_interval: {{ .Values.splunkPlatform.retryOnFailure.initialInterval }}
+    max_interval: {{ .Values.splunkPlatform.retryOnFailure.maxInterval }}
+    max_elapsed_time: {{ .Values.splunkPlatform.retryOnFailure.maxElapsedTime }}
+  sending_queue:
+    enabled:  {{ .Values.splunkPlatform.sendingQueue.enabled }}
+    num_consumers: {{ .Values.splunkPlatform.sendingQueue.numConsumers }}
+    queue_size: {{ .Values.splunkPlatform.sendingQueue.queueSize }}
+    {{- if .addPersistentStorage }}
+    storage: file_storage/persistent_queue
     {{- end }}
 {{- end }}
 

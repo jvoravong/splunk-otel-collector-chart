@@ -1,63 +1,97 @@
+##@ General
+# The general settings and variables for the project
+SHELL := /bin/bash
+
+# TODO: Move CHART_FILE_PATH and VALUES_FILE_PATH here, currently set in multiple places
+# The version of the splunk-otel-collector chart
+VERSION := $(shell grep "^version:" helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $$2}')
+
+## Location for GO resources
+ifeq (,$(shell go env GOBIN))
+GOBIN=$(shell go env GOPATH)/bin
+else
+GOBIN=$(shell go env GOBIN)
+endif
+
+## Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+CHLOGGEN ?= $(LOCALBIN)/chloggen
+
+# The help target as provided
+.PHONY: help
+help: ## Display Makefile help information for all actions
+	@awk 'BEGIN {FS = ":.*##"; \
+                 printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} \
+          /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } \
+          /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' \
+          $(MAKEFILE_LIST)
+
+##@ Initialization
+# Tasks for setting up the project environment
+
+.PHONY: install-tools
+install-tools: ## Install tools (macOS/Linux)
+	LOCALBIN=$(LOCALBIN) GOBIN=$(LOCALBIN) ci_scripts/install-tools.sh || exit 1
+
+##@ Build
+# Tasks related to building the Helm chart
+
+.PHONY: repo-update
+repo-update: ## Update Helm repositories to latest
+	@{ \
+	if ! (helm repo list | grep -q open-telemetry) ; then \
+		helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts || exit 1; \
+	fi ;\
+	if ! (helm repo list | grep -q jetstack) ; then \
+		helm repo add jetstack https://charts.jetstack.io || exit 1; \
+	fi ;\
+	helm repo update open-telemetry jetstack || exit 1; \
+	}
+
+.PHONY: dep-build
+dep-build: ## Build the Helm chart with latest dependencies from the current Helm repositories
+	@{ \
+	DEP_OK=true ;\
+	DIR=helm-charts/splunk-otel-collector ;\
+	if ! helm dependencies list $$DIR | grep open-telemetry | grep -q ok ; then DEP_OK=false ; fi ;\
+	if ! helm dependencies list $$DIR | grep jetstack | grep -q ok ; then DEP_OK=false ; fi ;\
+	if [ "$$DEP_OK" = "false" ] ; then helm dependencies build $$DIR || exit 1; fi ;\
+	}
+
 .PHONY: render
-render:
-	rm -rf rendered/manifests
-	# Set for one of each telemetry type.
-	for i in metrics traces logs; do \
-		dir=rendered/manifests/"$$i-only"; \
-		mkdir -p "$$dir"; \
-		helm template \
-			--namespace default \
-			--values rendered/values.yaml \
-			--set splunkObservability.metricsEnabled=false,splunkObservability.tracesEnabled=false,splunkObservability.logsEnabled=false,splunkObservability.$${i}Enabled=true \
-			--output-dir "$$dir" \
-			default helm-charts/splunk-otel-collector; \
-		mv "$$dir"/splunk-otel-collector/templates/* "$$dir"; \
-		rm -rf "$$dir"/splunk-otel-collector; \
-	done
+render: repo-update dep-build ## Render the Helm chart with the examples as input
+	examples/render-examples.sh || exit 1
 
-	# Default configuration deployment.
-	dir=rendered/manifests/agent-only; \
-	mkdir -p "$$dir"; \
-	helm template \
-		--namespace default \
-		--values rendered/values.yaml \
-		--output-dir "$$dir" \
-		default helm-charts/splunk-otel-collector; \
-	mv "$$dir"/splunk-otel-collector/templates/* "$$dir"; \
-	rm -rf "$$dir"/splunk-otel-collector
+##@ Changelog
+# Tasks related to changelog management
 
-	# Gateway mode deployment only.
-	dir=rendered/manifests/gateway-only; \
-	mkdir -p "$$dir"; \
-	helm template \
-		--namespace default \
-		--values rendered/values.yaml \
-		--output-dir "$$dir" \
-		--set agent.enabled=false,gateway.enabled=true,clusterReceiver.enabled=false \
-		default helm-charts/splunk-otel-collector; \
-	mv "$$dir"/splunk-otel-collector/templates/* "$$dir"; \
-	rm -rf "$$dir"/splunk-otel-collector
+.PHONY: chlog-available
+chlog-available: ## Validate the chloggen tool is available
+	@if [ -z "$(CHLOGGEN)" ]; then \
+		echo "Error: chloggen is not available. Please run 'make install-tools' to install it."; \
+		exit 1; \
+	fi
 
-	# Native OTel logs collection instead of fluentd.
-	dir=rendered/manifests/otel-logs; \
-	mkdir -p "$$dir"; \
-	helm template \
-		--namespace default \
-		--values rendered/values.yaml \
-		--output-dir "$$dir" \
-		--set logsEngine=otel,splunkObservability.logsEnabled=true \
-		default helm-charts/splunk-otel-collector; \
-	mv "$$dir"/splunk-otel-collector/templates/* "$$dir"; \
-	rm -rf "$$dir"/splunk-otel-collector
+# Example Usage:
+# 	make chlog-new CHANGE_TYPE=enhancement COMPONENT=agent NOTE="Add X" ISSUES='[42]'
+# 	make chlog-new [CHANGE_TYPE=enhancement] [COMPONENT=agent] [NOTE="Add X"] [ISSUES='[42]'] [FILENAME=add-x] [SUBTEXT="Add Y"]
+.PHONY: chlog-new
+chlog-new: chlog-available ## Creates or updates a YAML file under .chloggen
+	ci_scripts/chloggen-new.sh || exit 1
 
-	# eks/fargate deployment (with recommended gateway)
-	dir=rendered/manifests/eks-fargate; \
-	mkdir -p "$$dir"; \
-	helm template \
-		--namespace default \
-		--values rendered/values.yaml \
-		--output-dir "$$dir" \
-		--set distribution=eks/fargate,gateway.enabled=true,cloudProvider=aws \
-		default helm-charts/splunk-otel-collector; \
-	mv "$$dir"/splunk-otel-collector/templates/* "$$dir"; \
-	rm -rf "$$dir"/splunk-otel-collector
+.PHONY: chlog-validate
+chlog-validate: chlog-available ## Validates changelog requirements for pull requests
+	$(CHLOGGEN) validate || exit 1
+	ci_scripts/chloggen-pr-validate.sh || exit 1
+
+.PHONY: chlog-preview
+chlog-preview: chlog-validate ## Provide a preview of the generated CHANGELOG.md file for a release
+	$(CHLOGGEN) update --dry || exit 1
+
+# Example Usage: make chlog-update
+.PHONY: chlog-update
+chlog-update: chlog-validate ## Creates an update to CHANGELOG.md for a release entry from content in .chloggen
+	$(CHLOGGEN) update --version "[$(VERSION)] - $$(date +'%Y-%m-%d')" || exit 1; \
+	ci_scripts/chloggen-update.sh || exit 1

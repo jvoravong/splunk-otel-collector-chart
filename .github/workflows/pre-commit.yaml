@@ -10,12 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install Helm
-      uses: azure/setup-helm@v2.0
+      uses: azure/setup-helm@v3.5
       with:
-        version: v3.5.4
+        version: v3.11.3
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Setup Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
     - name: Run pre-commit
-      uses: pre-commit/action@v2.0.3
+      uses: pre-commit/action@v3.0.0

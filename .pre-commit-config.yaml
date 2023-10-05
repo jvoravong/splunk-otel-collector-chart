@@ -4,18 +4,20 @@ repos:
 -   repo: local
     hooks:
     - id: render
-      name: Pre-render Kubernetes resources
-      entry: make render
+      name: Create the rendered Kubernetes manifest resources for the project examples
+      entry: make repo-update dep-build render
       language: system
       pass_filenames: false
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
     hooks:
     - id: trailing-whitespace
-      exclude: "^rendered|^test"
+      exclude: "^examples|^test"
     - id: end-of-file-fixer
-      exclude: "^rendered|^test"
+      exclude: "^examples|^test"
     - id: check-yaml
       # Can't check source yaml since it has go templates in it.
-      exclude: "^helm-charts|^test"
+      # Can't check the examples because example demos contain multiple Kubernetes objects defined
+      # in a single file.
+      exclude: "^helm-charts|^test|^examples"
     - id: check-added-large-files

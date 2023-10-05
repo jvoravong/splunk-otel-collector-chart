@@ -11,13 +11,12 @@
 </p>
 
 <p align="center">
-  <a href="https://circleci.com/gh/signalfx/splunk-otel-collector-chart">
-    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/signalfx/splunk-otel-collector-chart/Lint%20and%20Test%20Charts?style=for-the-badge">
+  <a href="https://github.com/signalfx/splunk-otel-collector-chart/actions/workflows/lint-test.yaml?query=branch%3Amain">
+    <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/signalfx/splunk-otel-collector-chart/lint-test.yaml?branch=main&style=for-the-badge">
   </a>
   <a href="https://github.com/signalfx/splunk-otel-collector/releases">
     <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/signalfx/splunk-otel-collector-chart?include_prereleases&style=for-the-badge">
   </a>
-  <img alt="Beta" src="https://img.shields.io/badge/status-beta-informational?style=for-the-badge">
 </p>
 
 <p align="center">
@@ -40,8 +39,6 @@
 
 # Splunk OpenTelemetry Collector for Kubernetes
 
-> :construction: This project is currently in **BETA**. Splunk **officially supports** this project; however, there may be breaking changes.
->
 The Splunk OpenTelemetry Collector for Kubernetes is a [Helm](https://github.com/kubernetes/helm) chart for the [Splunk Distribution
 of OpenTelemetry Collector](https://github.com/signalfx/splunk-otel-collector).
 This chart creates a Kubernetes DaemonSet along with other Kubernetes objects
@@ -52,6 +49,12 @@ export metric, trace, and log data for:
 - [Splunk Cloud Platform](https://www.splunk.com/en_us/software/splunk-cloud-platform.html)
 - [Splunk Observability Cloud](https://www.observability.splunk.com/)
 
+## Current Status
+
+- The Splunk OpenTelemetry Collector for Kubernetes Helm chart is production tested; it is in use by a number of customers in their production environments
+- Customers using the helm chart can receive direct help from official Splunk support within SLA's
+- Customers can use or migrate to the Splunk OpenTelemetry Collector for Kubernetes Helm chart without worrying about future breaking changes to its core configuration experience for metrics and traces collection (OpenTelemetry logs collection configuration is in beta). There may be breaking changes to the Collector's own metrics.
+
 **Installations that use this distribution can receive direct help from
 Splunk's support teams.** Customers are free to use the core OpenTelemetry OSS
 components (several do!). We will provide best effort guidance for using these components;
@@ -59,7 +62,7 @@ however, only the Splunk distributions are in scope for official Splunk support 
 
 This distribution currently supports:
 
-- [Splunk APM](https://www.splunk.com/en_us/software/splunk-apm.html) via the
+- [Splunk APM](https://www.splunk.com/en_us/products/apm-application-performance-monitoring.html) via the
   [`sapm`
   exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sapmexporter).
   The [`otlphttp`
@@ -69,21 +72,19 @@ This distribution currently supports:
   More information available
   [here](https://docs.signalfx.com/en/latest/apm/apm-getting-started/apm-opentelemetry-collector.html).
 - [Splunk Infrastructure
-  Monitoring](https://www.splunk.com/en_us/software/infrastructure-monitoring.html)
+  Monitoring](https://www.splunk.com/en_us/products/infrastructure-monitoring.html)
   via the [`signalfx`
   exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter).
   More information available
   [here](https://docs.signalfx.com/en/latest/otel/imm-otel-collector.html).
-- [Splunk Log Observer](https://www.splunk.com/en_us/form/splunk-log-observer.html) via
+- [Splunk Log Observer](https://www.splunk.com/en_us/products/log-observer.html) via
   the [`splunk_hec`
   exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter).
-- [Splunk Cloud](https://www.splunk.com/en_us/software/splunk-cloud.html) or
+- [Splunk Cloud](https://www.splunk.com/en_us/products/splunk-cloud-platform.html) or
   [Splunk
-  Enterprise](https://www.splunk.com/en_us/software/splunk-enterprise.html) via
+  Enterprise](https://www.splunk.com/en_us/products/splunk-enterprise.html) via
   the [`splunk_hec`
   exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter).
-
-The Helm chart currently uses Fluentd by default for Kubernetes logs collection, and supports an option to use native OpenTelemetry logs collection for higher throughput and performance. See the [logs collection section](https://github.com/signalfx/splunk-otel-collector-chart/blob/main/docs/advanced-configuration.md#logs-collection) for more information, along with performance benchmarks run internally.
 
 ## Supported Kubernetes distributions
 
@@ -113,7 +114,7 @@ The following prerequisites are required to use the helm chart:
 
 #### To send data to Splunk Enterprise or Splunk Cloud
 
-- Splunk Enterprise 7.0 or later.
+- Splunk Enterprise 8.0 or later.
 - A minimum of one Splunk platform index ready to collect the log data. This index will be used for ingesting logs.
 - An HTTP Event Collector (HEC) token and endpoint. See the following topics for more information:
 
@@ -170,16 +171,20 @@ helm install my-splunk-otel-collector --set="splunkObservability.realm=us0,splun
 Sending data to Splunk Enterprise or Splunk Cloud
 
 ```bash
-helm install my-splunk-otel-collector --set="splunkPlatform.endpoint=127.0.0.1:8088,splunkPlatform.token=xxxxxx,splunkPlatform.metricsIndex=k8s-metrics,splunkPlatform.index=main,clusterName=my-cluster" splunk-otel-collector-chart/splunk-otel-collector
+helm install my-splunk-otel-collector --set="splunkPlatform.endpoint=https://127.0.0.1:8088/services/collector,splunkPlatform.token=xxxxxx,splunkPlatform.metricsIndex=k8s-metrics,splunkPlatform.index=main,clusterName=my-cluster" splunk-otel-collector-chart/splunk-otel-collector
 ```
 
 Sending data to both Splunk Observability Cloud and Splunk Enterprise or Splunk Cloud
 
 ```bash
-helm install my-splunk-otel-collector --set="splunkPlatform.endpoint=127.0.0.1:8088,splunkPlatform.token=xxxxxx,splunkPlatform.metricsIndex=k8s-metrics,splunkPlatform.index=main,splunkObservability.realm=us0,splunkObservability.accessToken=xxxxxx,clusterName=my-cluster" splunk-otel-collector-chart/splunk-otel-collector
+helm install my-splunk-otel-collector --set="splunkPlatform.endpoint=https://127.0.0.1:8088/services/collector,splunkPlatform.token=xxxxxx,splunkPlatform.metricsIndex=k8s-metrics,splunkPlatform.index=main,splunkObservability.realm=us0,splunkObservability.accessToken=xxxxxx,clusterName=my-cluster" splunk-otel-collector-chart/splunk-otel-collector
 ```
 
-Consider enabling [native OpenTelemetry logs collection](https://github.com/signalfx/splunk-otel-collector-chart/blob/main/docs/advanced-configuration.md#logs-collection) for better throughput instead of using the default fluentd engine. Add the following part --set=logsEngine=otel to your installation command if you want to use native OpenTelemetry logs collection.
+You can specify a namespace to deploy the chart to with the `-n` argument. Here is an example showing how to deploy in the `otel` namespace:
+
+```bash
+helm -n otel install my-splunk-otel-collector -f values.yaml splunk-otel-collector-chart/splunk-otel-collector
+```
 
 Instead of setting helm values as arguments a YAML file can be provided:
 
@@ -187,7 +192,18 @@ Instead of setting helm values as arguments a YAML file can be provided:
 helm install my-splunk-otel-collector --values my_values.yaml splunk-otel-collector-chart/splunk-otel-collector
 ```
 
-The [rendered directory](rendered) contains pre-rendered Kubernetes resource manifests.
+The [examples directory](examples) contains examples of typical use cases with pre-rendered Kubernetes resource manifests for each example.
+
+### How to upgrade
+
+**Make sure you run `helm repo update` before you upgrade**
+
+To upgrade a deployment follow the instructions for installing
+but use `upgrade` instead of `install`, for example:
+
+```bash
+helm upgrade my-splunk-otel-collector --values my_values.yaml
+```
 
 ### How to uninstall
 
@@ -201,6 +217,10 @@ helm delete my-splunk-otel-collector
 
 To fully configure the Helm chart, see the [advanced
 configuration](docs/advanced-configuration.md).
+
+## Auto-instrumentation
+
+For setting up auto-instrumentation, see the [auto-instrumentation-introduction.md](docs/auto-instrumentation-introduction.md).
 
 ## Contributing
 

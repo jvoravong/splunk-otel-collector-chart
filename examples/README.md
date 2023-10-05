@@ -1,185 +1,57 @@
-# Examples of chart configuration
+# Examples of Helm Chart value configurations and resulting rendered Kubernetes manifests
 
-The Splunk OpenTelemetry Collector Chart can be configured in many ways to
-support different use-cases. Here is a collection of example values.yaml files
-that can be used with the chart installation or upgrade commands to change the
-default behavior.
+## Structure
+
+Each example has a directory where each of the following is included.
+- README.md: A short description about the example.
+- A Helm values configuration file to demonstrate the example, the file name always ends in values.yaml
+  or values.norender.yaml.
+  - Files ending with `-values.yaml` will be rendered by the script, resulting in a populated `rendered_manifests`
+    directory.
+  - Files ending with `-values.norender.yaml` are validated, but their rendered output is not persisted
+    in the repository. This is because these files typically represent derivative configurations. While
+    it's essential to ensure they are valid, we avoid persisting their output to keep the repository clean
+    and focused. If such a file is present in an example directory, the now `rendered_manifests` directory
+    and related content will exist.
+- A rendered_manifests directory that contains the rendered Kubernetes manifests for the example.
+  - Search for "CHANGEME" to find the values that must be changed in order to use the rendered manifests directly.
+
+## Using Install Examples
 
 Usage example:
 ```
-helm install my-splunk-otel-collector --values my-values.yaml splunk-otel-collector-chart/splunk-otel-collector
+helm install my-splunk-otel-collector --values path-to-values-file.yaml splunk-otel-collector-chart/splunk-otel-collector
 ```
 
-All of the provided examples must also include the required parameters:
+## Common Configurations
 
+The Splunk OpenTelemetry Collector Chart can be configured to export data to
+to the following targets:
+- [Splunk Enterprise](https://www.splunk.com/en_us/software/splunk-enterprise.html)
+- [Splunk Cloud Platform](https://www.splunk.com/en_us/software/splunk-cloud-platform.html)
+- [Splunk Observability Cloud](https://www.observability.splunk.com/)
+
+All the provided examples must include one of these two configuration sets to
+know which target to export data to.
+
+Use these configurations for exporting data to Splunk Enterprise or Splunk Cloud Platform.
 ```yaml
 # Splunk Platform required parameters
+clusterName: CHANGEME
 splunkPlatform:
-  token: xxxxxx
+  token: CHANGEME
   endpoint: http://localhost:8088/services/collector
 ```
 
-or
-
+Use these configurations for exporting data to Splunk Observability Cloud.
 ```yaml
 # Splunk Observability required parameters
-clusterName: my-cluster
+clusterName: CHANGEME
 splunkObservability:
-  realm: us0
-  accessToken: my-access-token
+  realm: CHANGEME
+  accessToken: CHANGEME
 ```
 
-## Enable traces sampling
+## For Developers
 
-This example shows how to change default OTel Collector configuration to add
-[Probabilistic Sampling Processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/probabilisticsamplerprocessor).
-This approach can be used for any other OTel Collector re-configuration as well.
-Final OTel config will be created by merging the custom config provided in
-`agent.config` into [default configuration of agent-mode
-collector](https://github.com/signalfx/splunk-otel-collector-chart/blob/main/helm-charts/splunk-otel-collector/templates/config/_otel-agent.tpl).
-
-```yaml
-agent:
-  config:
-    processors:
-      probabilistic_sampler:
-        hash_seed: 22
-        sampling_percentage: 15.3
-    service:
-      pipelines:
-        traces:
-          processors:
-            - memory_limiter
-            - probabilistic_sampler
-            - k8sattributes
-            - batch
-            - resource
-            - resourcedetection
-```
-
-In the example above, first we define a new processor, then add it to the
-default traces pipeline. The pipeline has to be fully redefined, because
-lists cannot merge - they have to be overridden.
-
-## Enable OTel Collector in the gateway mode
-
-This configuration installs collector as a gateway deployment along with
-regular components. All the telemetry will be routed through this collector.
-By default, the gateway-mode collector deployed with 3 replicas with 4 CPU
-cores and 8Gb of memory each, but this can be easily changed as in this example.
-`resources` can be adjusted for other components as well: `agent`,
-`clusterReceiver`, `fluentd`.
-
-```yaml
-gateway:
-  enabled: true
-  replicaCount: 1
-  resources:
-    limits:
-      cpu: 2
-      memory: 4Gb
-```
-
-## Deploy gateway-mode OTel Collector only
-
-This configuration will install collector as a gateway deployment only.
-No metrics or logs will be collected from the gateway instance(s), the gateway
-can be used to forward telemetry data through it for aggregation, enrichment
-purposes.
-
-```yaml
-gateway:
-  enabled: true
-agent:
-  enabled: false
-clusterReceiver:
-  enabled: false
-```
-
-## Route telemetry data through a gateway deployed separately
-
-The following configuration can be used to forward telemetry through an OTel
-collector gateway deployed separately.
-
-```yaml
-agent:
-  config:
-    exporters:
-      otlp:
-        endpoint: <custom-gateway-url>:4317
-        tls:
-          insecure: true
-      signalfx:
-        ingest_url: http://<custom-gateway-url>:9943
-        api_url: http://<custom-gateway-url>:6060
-    service:
-      pipelines:
-        traces:
-          exporters: [otlp, signalfx]
-        metrics:
-          exporters: [otlp]
-        logs:
-          exporters: [otlp]
-
-clusterReceiver:
-  config:
-    exporters:
-      signalfx:
-        ingest_url: http://<custom-gateway-url>:9943
-        api_url: http://<custom-gateway-url>:6060
-```
-
-OTLP format is used between agent and gateway wherever possible for performance
-reasons. OTLP is almost the same as internal data representation in OTel
-Collector, so using it between agent and gateway reduce CPU cycles spent on
-data format transformations.
-
-## Route telemetry data through a proxy server
-
-This configuration shows how to add extra environment variables to OTel
-Collector containers to send the traffic through a proxy server from
-both components that are enabled by default.
-
-```yaml
-agent:
-  extraEnvs:
-    - name: HTTPS_PROXY
-      value: "192.168.0.10"
-clusterReceiver:
-  extraEnvs:
-    - name: HTTPS_PROXY
-      value: "192.168.0.10"
-```
-
-## Enable multiline logs parsing of Java stack traces
-
-This configuration shows how to enable parsing of Java stack trace from all
-pods in the cluster starting with "java-app" name.
-
-```yaml
-fluentd:
-  config:
-    logs:
-      java-app:
-        from:
-          pod: "java-app"
-        multiline:
-          firstline: /\d{4}-\d{1,2}-\d{1,2}/
-```
-
-# Logs collection configuration for CRI-O container runtime
-
-Default logs collection is configured for Docker container runtime.
-The following configuration should be set for CRI-O or containerd runtimes,
-e.g. OpenShift.
-
-```yaml
-fluentd:
-  config:
-    containers:
-      logFormatType: cri
-      criTimeFormat: "%Y-%m-%dT%H:%M:%S.%N%:z"
-```
-
-`criTimeFormat` can be used to configure logs collection for different log
-formats, e.g. `criTimeFormat: "%Y-%m-%dT%H:%M:%S.%NZ"` for IBM IKS.
+For developer-specific details regarding how to add examples, the involved rendering process, and other related notes, please refer to [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md).

@@ -108,6 +108,13 @@ Whether metrics enabled for Splunk Platform.
 {{- end -}}
 
 {{/*
+Whether traces enabled for Splunk Platform.
+*/}}
+{{- define "splunk-otel-collector.platformTracesEnabled" -}}
+{{- and (eq (include "splunk-otel-collector.splunkPlatformEnabled" .) "true") .Values.splunkPlatform.tracesEnabled }}
+{{- end -}}
+
+{{/*
 Whether metrics enabled for any destination.
 */}}
 {{- define "splunk-otel-collector.metricsEnabled" -}}
@@ -115,10 +122,10 @@ Whether metrics enabled for any destination.
 {{- end -}}
 
 {{/*
-Whether traces enabled for any destination. (currently applicable to Splunk Observability only).
+Whether traces enabled for any destination.
 */}}
 {{- define "splunk-otel-collector.tracesEnabled" -}}
-{{- include "splunk-otel-collector.o11yTracesEnabled" . }}
+{{- or (eq (include "splunk-otel-collector.o11yTracesEnabled" .) "true") (eq (include "splunk-otel-collector.platformTracesEnabled" .) "true") }}
 {{- end -}}
 
 {{/*
@@ -136,13 +143,21 @@ Whether profiling data is enabled (applicable to Splunk Observability only).
 {{- end -}}
 
 {{/*
-Define name for the Secret
+Define name for the Splunk Secret
 */}}
 {{- define "splunk-otel-collector.secret" -}}
-{{- if .Values.secret.name -}}
-{{- printf "%s" .Values.secret.name -}}
+{{- default (include "splunk-otel-collector.fullname" .) .Values.secret.name }}
+{{- end -}}
+
+{{/*
+Define name for the etcd Secret
+*/}}
+{{- define "splunk-otel-collector.etcdSecret" -}}
+{{- if .Values.agent.controlPlaneMetrics.etcd.secret.name -}}
+{{- printf "%s" .Values.agent.controlPlaneMetrics.etcd.secret.name -}}
 {{- else -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- $name := (include "splunk-otel-collector.fullname" .) -}}
+{{- printf "%s-etcd" $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end -}}
 
@@ -185,20 +200,6 @@ Get Splunk Observability Access Token.
 {{- end -}}
 
 {{/*
-Helper that returns the controlPlaneEnabled parameter taking care of backward compatibility with the old parameter
-name "autodetect.controlPlane".
-*/}}
-{{- define "splunk-otel-collector.controlPlaneEnabled" -}}
-{{- if ne (toString .Values.agent.controlPlaneEnabled) "<nil>" }}
-{{- .Values.agent.controlPlaneEnabled }}
-{{- else if ne (toString .Values.autodetect.controlPlane) "<nil>" }}
-{{- .Values.autodetect.controlPlane }}
-{{- else }}
-{{- true }}
-{{- end -}}
-{{- end -}}
-
-{{/*
 Create the fluentd image name.
 */}}
 {{- define "splunk-otel-collector.image.fluentd" -}}
@@ -210,6 +211,13 @@ Create the opentelemetry collector image name.
 */}}
 {{- define "splunk-otel-collector.image.otelcol" -}}
 {{- printf "%s:%s" .Values.image.otelcol.repository (.Values.image.otelcol.tag | default .Chart.AppVersion) -}}
+{{- end -}}
+
+{{/*
+Create the patch-log-dirs image name.
+*/}}
+{{- define "splunk-otel-collector.image.initPatchLogDirs" -}}
+{{- printf "%s:%s" .Values.image.initPatchLogDirs.repository .Values.image.initPatchLogDirs.tag | trimSuffix ":" -}}
 {{- end -}}
 
 {{/*
@@ -253,15 +261,15 @@ Create a filter expression for multiline logs configuration.
 {{- $expr := "" }}
 {{- if .namespaceName }}
 {{- $useRegexp := eq (toString .namespaceName.useRegexp | default "false") "true" }}
-{{- $expr = cat "($$resource[\"k8s.namespace.name\"])" (ternary "matches" "==" $useRegexp) (quote .namespaceName.value) "&&" }}
+{{- $expr = cat "(resource[\"k8s.namespace.name\"])" (ternary "matches" "==" $useRegexp) (quote .namespaceName.value) "&&" }}
 {{- end }}
 {{- if .podName }}
 {{- $useRegexp := eq (toString .podName.useRegexp | default "false") "true" }}
-{{- $expr = cat $expr "($$resource[\"k8s.pod.name\"])" (ternary "matches" "==" $useRegexp) (quote .podName.value) "&&" }}
+{{- $expr = cat $expr "(resource[\"k8s.pod.name\"])" (ternary "matches" "==" $useRegexp) (quote .podName.value) "&&" }}
 {{- end }}
 {{- if .containerName }}
 {{- $useRegexp := eq (toString .containerName.useRegexp | default "false") "true" }}
-{{- $expr = cat $expr "($$resource[\"k8s.container.name\"])" (ternary "matches" "==" $useRegexp) (quote .containerName.value) "&&" }}
+{{- $expr = cat $expr "(resource[\"k8s.container.name\"])" (ternary "matches" "==" $useRegexp) (quote .containerName.value) "&&" }}
 {{- end }}
 {{- $expr | trimSuffix "&&" | trim }}
 {{- end -}}
@@ -321,6 +329,32 @@ compatibility with the old config group name: "otelAgent".
 {{- end -}}
 
 {{/*
+The apiVersion for podDisruptionBudget policies.
+*/}}
+{{- define "splunk-otel-collector.PDB-apiVersion" -}}
+{{- if (semverCompare ">= 1.21.0" .Capabilities.KubeVersion.Version) -}}
+{{- print "policy/v1" -}}
+{{- else -}}
+{{- print "policy/v1beta1" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+The name of the gateway service.
+*/}}
+{{- define "splunk-otel-collector.gatewayServiceName" -}}
+{{  (include "splunk-otel-collector.fullname" . ) | trunc 63 | trimSuffix "-" }}
+{{- end -}}
+
+{{/*
+Whether the gateway is enabled, either through network explorer, or through its own flag.
+*/}}
+{{- define "splunk-otel-collector.gatewayEnabled" -}}
+{{- $gateway := fromYaml (include "splunk-otel-collector.gateway" .) }}
+{{- or $gateway.enabled .Values.networkExplorer.enabled }}
+{{- end -}}
+
+{{/*
 Helper that returns "gateway" parameter group yaml taking care of backward
 compatibility with the old config group name: "otelCollector".
 */}}
@@ -345,7 +379,14 @@ compatibility with the old config group name: "otelK8sClusterReceiver".
 {{- end -}}
 
 {{/*
-"clusterReceiverServiceName" for the eks/fargate cluster receiver statefulSet
+"clusterReceiverTruncatedName" for the eks/fargate cluster receiver statefulSet name accounting for 11 appended random chars
+*/}}
+{{- define "splunk-otel-collector.clusterReceiverTruncatedName" -}}
+{{ printf "%s-k8s-cluster-receiver" ( include "splunk-otel-collector.fullname" . ) | trunc 52 | trimSuffix "-" }}
+{{- end -}}
+
+{{/*
+"clusterReceiverServiceName" for the eks/fargate cluster receiver statefulSet headless service
 */}}
 {{- define "splunk-otel-collector.clusterReceiverServiceName" -}}
 {{ printf "%s-k8s-cluster-receiver" ( include "splunk-otel-collector.fullname" . ) | trunc 63 | trimSuffix "-" }}
@@ -356,4 +397,63 @@ compatibility with the old config group name: "otelK8sClusterReceiver".
 */}}
 {{- define "splunk-otel-collector.clusterReceiverNodeDiscovererScript" -}}
 {{ printf "%s-cr-node-discoverer-script" ( include "splunk-otel-collector.fullname" . ) | trunc 63 | trimSuffix "-" }}
+{{- end -}}
+
+{{/*
+"o11yInfraMonEventsEnabled" helper defines whether Observability Infrastructure monitoring events are enabled
+*/}}
+{{- define "splunk-otel-collector.o11yInfraMonEventsEnabled" -}}
+{{- $clusterReceiver := fromYaml (include "splunk-otel-collector.clusterReceiver" .) }}
+{{- if eq (toString $clusterReceiver.k8sEventsEnabled) "<nil>" }}
+{{- .Values.splunkObservability.infrastructureMonitoringEventsEnabled }}
+{{- else }}
+{{- $clusterReceiver.k8sEventsEnabled }}
+{{- end }}
+{{- end -}}
+
+
+{{/*
+Whether object collection by k8s object receiver is enabled
+*/}}
+{{- define "splunk-otel-collector.objectsEnabled" -}}
+{{- $clusterReceiver := fromYaml (include "splunk-otel-collector.clusterReceiver" .) }}
+{{- gt (len $clusterReceiver.k8sObjects) 0 }}
+{{- end -}}
+
+{{/*
+Whether object collection by k8s object receiver or/and event collection by k8s event receiver is enabled
+*/}}
+{{- define "splunk-otel-collector.objectsOrEventsEnabled" -}}
+{{- $clusterReceiver := fromYaml (include "splunk-otel-collector.clusterReceiver" .) }}
+{{- or $clusterReceiver.eventsEnabled (eq (include "splunk-otel-collector.objectsEnabled" .) "true") -}}
+{{- end -}}
+
+
+{{/*
+Whether clusterReceiver should be enabled
+*/}}
+{{- define "splunk-otel-collector.clusterReceiverEnabled" -}}
+{{- $clusterReceiver := fromYaml (include "splunk-otel-collector.clusterReceiver" .) }}
+{{- and $clusterReceiver.enabled (or (eq (include "splunk-otel-collector.metricsEnabled" .) "true") (eq (include "splunk-otel-collector.objectsOrEventsEnabled" .) "true")) -}}
+{{- end -}}
+
+
+{{/*
+Build the securityContext for Linux and Windows
+*/}}
+{{- define "splunk-otel-collector.securityContext" -}}
+{{- if .isWindows }}
+{{- $_ := unset .securityContext "runAsUser" }}
+{{- if not (hasKey .securityContext "windowsOptions")}}
+{{- $_ := set .securityContext "windowsOptions" dict }}
+{{- end }}
+{{- if and (not (hasKey .securityContext.windowsOptions "runAsUserName")) (.setRunAsUser) }}
+{{- $_ := set .securityContext.windowsOptions "runAsUserName" "ContainerAdministrator"}}
+{{- end }}
+{{- else }}
+{{- if and (eq (toString .securityContext.runAsUser) "<nil>") (.setRunAsUser) }}
+{{- $_ := set .securityContext "runAsUser" 0 }}
+{{- end }}
+{{- end }}
+{{- toYaml .securityContext }}
 {{- end -}}

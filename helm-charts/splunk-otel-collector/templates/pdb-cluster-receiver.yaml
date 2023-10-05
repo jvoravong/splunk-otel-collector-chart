@@ -1,6 +1,5 @@
-{{ $clusterReceiver := fromYaml (include "splunk-otel-collector.clusterReceiver" .) }}
-{{- if and (and $clusterReceiver.enabled (eq (include "splunk-otel-collector.metricsEnabled" $) "true")) .Values.podDisruptionBudget }}
-apiVersion: policy/v1beta1
+{{- if and (eq (include "splunk-otel-collector.clusterReceiverEnabled" . ) "true" ) .Values.podDisruptionBudget }}
+apiVersion: {{ include "splunk-otel-collector.PDB-apiVersion" . }}
 kind: PodDisruptionBudget
 metadata:
   name: {{ template "splunk-otel-collector.fullname" . }}-otel-k8s-cluster-receiver

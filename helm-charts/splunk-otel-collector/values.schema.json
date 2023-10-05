@@ -26,7 +26,7 @@
       "minLength": 1
     },
     "splunkPlatform": {
-      "description": "Splunk Data-to-Everything Platform configuration",
+      "description": "Splunk Cloud / Splunk Enterprise configuration",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -46,6 +46,9 @@
         "metricsIndex": {
           "type": "string"
         },
+        "tracesIndex": {
+          "type": "string"
+        },
         "source": {
           "type": "string"
         },
@@ -59,6 +62,9 @@
           "type": "boolean"
         },
         "timeout": {
+          "type": "string"
+        },
+        "idleConnTimeout": {
           "type": "string"
         },
         "insecureSkipVerify": {
@@ -81,6 +87,10 @@
           "description": "Send Metrics to Splunk Platform",
           "type": "boolean"
         },
+        "tracesEnabled": {
+          "description": "Send Traces to Splunk Platform",
+          "type": "boolean"
+        },
         "fieldNameConvention": {
           "type": "object",
           "additionalProperties": false,
@@ -90,6 +100,52 @@
             },
             "keepOtelConvention": {
               "type": "boolean"
+            }
+          }
+        },
+        "retryOnFailure": {
+          "description": "Retry configurations",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "initialInterval": {
+              "type": "string"
+            },
+            "maxInterval": {
+              "type": "string"
+            },
+            "maxElapsedTime": {
+              "type": "string"
+            }
+          }
+        },
+        "sendingQueue": {
+          "description": "Batching configurations for logs/traces/metrics",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "numConsumers": {
+              "type": "integer"
+            },
+            "queueSize": {
+              "type": "integer"
+            },
+            "persistentQueue": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "storagePath": {
+                  "type": "string"
+                }
+              }
             }
           }
         }
@@ -146,6 +202,10 @@
         "profilingEnabled": {
           "description": "Whether profiling data is enabled for Splunk Observability",
           "type": "boolean"
+        },
+        "infrastructureMonitoringEventsEnabled": {
+          "description": "Send Kubernetes events to Splunk Observability Infrastructure Monitoring",
+          "type": "boolean"
         }
       },
       "anyOf": [
@@ -166,6 +226,13 @@
         {
           "properties": {
             "logsEnabled": {
+              "const": true
+            }
+          }
+        },
+        {
+          "properties": {
+            "profilingEnabled": {
               "const": true
             }
           }
@@ -289,7 +356,145 @@
           "type": "boolean"
         },
         "controlPlaneEnabled": {
-          "type": "boolean"
+          "type": "boolean",
+          "deprecated": true
+        },
+        "controlPlaneMetrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "apiserver": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "controllerManager": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "coredns": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "etcd": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "secret": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "create": {
+                      "type": "boolean"
+                    },
+                    "clientCert": {
+                      "type": "string"
+                    },
+                    "clientKey": {
+                      "type": "string"
+                    },
+                    "caFile": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "skipVerify": {
+                  "type": "boolean"
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "$comment": "if etcd metrics are enabled",
+                    "properties": {
+                      "enabled": {
+                        "const": true
+                      }
+                    }
+                  },
+                  "then": {
+                    "if": {
+                      "$comment": "if the helm chart will create the etcd k8s secret",
+                      "properties": {
+                        "secret": {
+                          "properties": {
+                            "create": {
+                              "const": true
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "then": {
+                      "$comment": "then require a clientCert and clientKey that are not empty strings",
+                      "properties": {
+                        "secret": {
+                          "properties": {
+                            "clientCert": {
+                              "minLength": 1
+                            },
+                            "clientKey": {
+                              "minLength": 1
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "else": {
+                      "$comment": "then require a k8s secret name for a secret the user created that is not an empty string",
+                      "properties": {
+                        "secret": {
+                          "properties": {
+                            "name": {
+                              "minLength": 1
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "proxy": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "scheduler": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
         },
         "ports": {
           "type": "object",
@@ -362,6 +567,32 @@
         "securityContext": {
           "type": "object"
         },
+        "updateStrategy": {
+            "type": "string",
+            "enum": [
+                "OnDelete",
+                "RollingUpdate"
+            ]
+        },
+	      "maxUnavailable": {
+	        "oneOf": [
+	          {
+	            "type": "string"
+            },
+            {
+	            "type": "integer"
+	          }
+	        ]
+	      },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        },
         "annotations": {
           "type": "object"
         },
@@ -388,6 +619,9 @@
           "items": {
             "type": "object"
           }
+        },
+        "featureGates": {
+          "type": "string"
         },
         "config": {
           "type": "object"
@@ -468,7 +702,20 @@
           "type": "object"
         },
         "k8sEventsEnabled": {
-          "type": "boolean"
+          "description": "[DEPRECATED] Use eventsEnabled instead.",
+          "type": "boolean",
+          "deprecated": true
+        },
+        "eventsEnabled": {
+          "description": "[DEPRECATED] Use k8sObjects instead.",
+          "type": "boolean",
+          "deprecated": true
+        },
+        "k8sObjects": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
         },
         "podLabels": {
           "type": "object"
@@ -490,6 +737,9 @@
           "items": {
             "type": "object"
           }
+        },
+        "featureGates": {
+          "type": "string"
         },
         "config": {
           "type": "object"
@@ -539,6 +789,9 @@
               "items": {
                 "type": "object"
               }
+            },
+            "maxRecombineLogSize": {
+              "type": "integer"
             }
           }
         },
@@ -803,6 +1056,26 @@
               ]
             }
           }
+        },
+         "initPatchLogDirs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository": {
+              "type": "string"
+            },
+            "tag": {
+              "type": "string"
+            },
+            "pullPolicy": {
+              "type": "string",
+              "enum": [
+                "IfNotPresent",
+                "Always",
+                "Never"
+              ]
+            }
+          }
         }
       }
     },
@@ -899,6 +1172,19 @@
     "isWindows": {
       "description": "Apply for k8s cluster with windows worker node.",
       "type": "boolean"
+    },
+    "securityContextConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean"
+        }
+      }
+    },
+    "securityContextConstraintsOverwrite": {
+      "description": "Openshift SecurityContextConstraints can be overriden in this field.",
+      "type": "object"
     },
     "gateway": {
       "description": "Splunk OpenTelemetry Collector gateway deployment configuration.",
@@ -1024,6 +1310,9 @@
             "type": "object"
           }
         },
+        "featureGates": {
+          "type": "string"
+        },
         "config": {
           "type": "object"
         }
@@ -1087,6 +1376,131 @@
       "description": "[DEPRECATED] Send Logs to Splunk Observability",
       "type": "boolean",
       "deprecated": true
+    },
+    "networkExplorer": {
+      "description": "Splunk Network Explorer Configuration",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable network explorer",
+          "type": "boolean"
+        },
+        "images": {
+          "description": "images",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tag": {
+              "type": "string"
+            },
+            "repository": {
+              "type": "string"
+            },
+            "pullPolicy": {
+              "type": "string",
+              "enum": [
+                "IfNotPresent",
+                "Always",
+                "Never"
+              ]
+            }
+          }
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "log": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "console": {
+              "type": "boolean"
+            },
+            "level": {
+              "type": "string",
+              "enum": [
+                "error",
+                "warning",
+                "info",
+                "debug",
+                "trace"
+              ]
+            }
+          }
+        },
+        "debug": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "storeMinidump": {
+              "type": "boolean"
+            },
+            "sendUnplannedExitMetric": {
+              "type": "boolean"
+            }
+          }
+        },
+        "kernelCollector": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "cloudCollector": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "k8sCollector": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "reducer": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "rbac": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "create": {
+              "type": "boolean"
+            }
+          }
+        },
+        "podSecurityPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "annotations": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    },
+    "operator": {
+      "description": "OpenTelemetry Operator configuration. A subchart that is used to install the operator, see https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-operator/values.schema.json for more info.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "certmanager": {
+      "description": "cert-manager adds certificates and certificate issuers as resource types in Kubernetes clusters, and simplifies the process of obtaining, renewing and using those certificates.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "featureGates": {
+      "description": "Helm Chart Feature Gates.",
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "allOf": [
