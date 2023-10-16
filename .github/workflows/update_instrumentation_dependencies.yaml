@@ -33,12 +33,14 @@ jobs:
         id: swizzle_version
         run: |
           echo "Update Splunk Operator Instrumentation for ${{ matrix.language }}"
-
           # Set debug argument if DEBUG_MODE is true
           DEBUG_ARG=""
           if [ "${{ github.event.inputs.DEBUG_MODE }}" == "true" ]; then
             DEBUG_ARG="--debug"
           fi
+
+          # Setup the git config for the bot user
+          ./ci_scripts/base_util.sh setup_git
 
           # Run the update script and handle errors
           ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} $DEBUG_ARG || exit 1
