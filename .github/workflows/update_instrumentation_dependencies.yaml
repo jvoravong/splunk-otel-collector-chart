@@ -40,10 +40,8 @@ jobs:
             DEBUG_ARG="--debug"
           fi
 
-          # Setup the git config for the bot user
-          ./ci_scripts/base_util.sh setup_git
-
           # Run the update script and handle errors
+          # Emits output steps.swizzle_version.outputs.TAG_UPSTREAM
           ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} $DEBUG_ARG || exit 1
 
           # Check if an update is needed
@@ -65,7 +63,7 @@ jobs:
           author: release-bot <ssg-srv-gh-o11y-gdi@splunk.com>
           committer: release-bot <ssg-srv-gh-o11y-gdi@splunk.com>
           commit-message: Update ${{ matrix.language }} instrumentation version
-          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
+          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }}
           body: Use the new version of the ${{ matrix.language }} instrumentation
           branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
           base: main
