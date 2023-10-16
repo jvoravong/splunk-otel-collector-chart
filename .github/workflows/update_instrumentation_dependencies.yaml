@@ -40,6 +40,9 @@ jobs:
             DEBUG_ARG="--debug"
           fi
 
+          # Setup the git config for the bot user
+          ./ci_scripts/base_util.sh setup_git
+
           # Run the update script and handle errors
           ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} $DEBUG_ARG || exit 1
 
@@ -54,10 +57,12 @@ jobs:
 
           echo "Displaying current git diff..."
           git --no-pager diff
+
       - name: PR the new version
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
         with:
+          committer: release-bot <ssg-srv-gh-o11y-gdi@splunk.com>
           commit-message: Update ${{ matrix.language }} instrumentation version
           title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
           body: Use the new version of the ${{ matrix.language }} instrumentation

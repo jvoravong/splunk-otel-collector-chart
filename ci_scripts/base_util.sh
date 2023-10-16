@@ -90,3 +90,11 @@ emit_output() {
         echo "${var_name}=${var_value}"
     fi
 }
+
+# Function: setup_git
+# Description: Configures git so commits are published under the bot user.
+# Usage: setup_git
+setup_git() {
+  git config --global user.name release-bot
+  git config --global user.email ssg-srv-gh-o11y-gdi@splunk.com
+}
