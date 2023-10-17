@@ -86,27 +86,27 @@ jobs:
           # Check out the existing "update-${{ matrix.language }}" branch
           git checkout "update-${{ matrix.language }}" || git checkout -b "update-${{ matrix.language }}"
 
-          - name: Get PR Issue Number
-            if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
-            id: pr_info
-            run: |
-              PR_URL=$(jq -r '.pull_request.html_url' $GITHUB_EVENT_PATH)
-              PR_ISSUE_NUMBER=$(basename $PR_URL)
-              echo "PR_ISSUE_NUMBER=$PR_ISSUE_NUMBER" >> $GITHUB_ENV
+      - name: Get PR Issue Number
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        id: pr_info
+        run: |
+          PR_URL=$(jq -r '.pull_request.html_url' $GITHUB_EVENT_PATH)
+          PR_ISSUE_NUMBER=$(basename $PR_URL)
+          echo "PR_ISSUE_NUMBER=$PR_ISSUE_NUMBER" >> $GITHUB_ENV
 
-          - name: Create Changelog
-            if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
-            run: |
-              make chlog-new CHANGE_TYPE=enhancement COMPONENT=operator NOTE="Bump ${{ matrix.language }} to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }} in ${{ env.VALUES_YAML }}" ISSUES=${{ env.PR_ISSUE_NUMBER }}
+      - name: Create Changelog
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          make chlog-new CHANGE_TYPE=enhancement COMPONENT=operator NOTE="Bump ${{ matrix.language }} to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }} in ${{ env.VALUES_YAML }}" ISSUES=${{ env.PR_ISSUE_NUMBER }}
 
-          - name: Commit and Push Changelog
-            if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
-            run: |
-              # Add all changes and files
-              git add .
+      - name: Commit and Push Changelog
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          # Add all changes and files
+          git add .
 
-              # Commit the changelog with a message
-              git commit -m "Add changelog for PR #${{ env.PR_ISSUE_NUMBER }}"
+          # Commit the changelog with a message
+          git commit -m "Add changelog for PR #${{ env.PR_ISSUE_NUMBER }}"
 
-              # Push the changes to the PR branch
-              git push origin "update-${{ matrix.language }}"
+          # Push the changes to the PR branch
+          git push origin "update-${{ matrix.language }}"
