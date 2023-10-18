@@ -1,0 +1,32 @@
+name: Update Webpage Content
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # This will run daily at midnight
+  workflow_dispatch:
+
+jobs:
+  fetch-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Install pup
+        run: |
+          wget https://github.com/ericchiang/pup/releases/download/v0.4.0/pup_v0.4.0_linux_amd64.zip
+          unzip pup_v0.4.0_linux_amd64.zip
+          chmod +x pup
+          sudo mv pup /usr/local/bin/
+
+      - name: Fetch and Parse Webpage
+        run: |
+          curl -s https://endoflife.date/google-kubernetes-engine | pup 'div.main-content-wrap html{}' > extracted-content.html
+
+      - name: Commit and Push to Repository
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add extracted-content.html
+          git commit -m "Update webpage content" || echo "No changes to commit"
+          git push
