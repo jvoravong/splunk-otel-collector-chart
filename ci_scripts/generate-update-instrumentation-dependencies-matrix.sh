@@ -12,7 +12,6 @@ get_latest_tag() {
         local owner="${BASH_REMATCH[1]}"
         local repo_name="${BASH_REMATCH[3]}"
         local latest_api="https://quay.io/api/v1/repository/$owner/$repo_name/tag/?limit=1&onlyActiveTags=true"
-        curl -sL "$latest_api" | jq -r '.tags[0].name'
         echo $(curl -sL "$latest_api" | jq -r '.tags[0].name')
 
     # For ghcr.io
@@ -20,14 +19,15 @@ get_latest_tag() {
         local owner="${BASH_REMATCH[1]}"
         local repo_name="${BASH_REMATCH[2]}"
         local latest_api="https://api.github.com/repos/${owner}/${repo_name}/tags"
-        echo $(curl -L -qs -H 'Accept: application/vnd.github+json' "$latest_api" | jq -r '.[0].name')
+        echo $(curl -sL -qs -H 'Accept: application/vnd.github+json' "$latest_api" | jq -r '.[0].name')
 
     # Default for Docker Hub
     else
-        local manifest_url="https://registry.hub.docker.com/v2/${repo_value}/tags/list"
-        echo $(curl -s "$manifest_url" | jq -r '.tags[0]')
+        local latest_api="https://registry.hub.docker.com/v2/repositories/$repo_value/tags/?page_size=2"  # Fetch only the two latest tags
+        echo $(curl -sL "$latest_api" | jq '.results[] | select(.name != "latest") | .name')
     fi
 }
+
 
 
 values_file="$SCRIPT_DIR/../helm-charts/splunk-otel-collector/values.yaml"
@@ -44,18 +44,27 @@ for path in $repository_paths; do
     setd "repository_value" "$(yq e ".$path.repository" "$values_file")"
     setd "current_tag" "$(yq e ".$path.tag" "$values_file")"
 
-    # Skip the loop iteration if the current_tag is empty
-    if [[ -z "$current_tag" ]]; then
+    # Skip if the current_tag is empty or "latest"
+    if [[ -z "$current_tag" || "$current_tag" == "latest" ]]; then
+        continue
+    # The operator subchart must be in lock step with images prefixed with autoinstrumentation-*
+    # Skip if repository_value starts with "autoinstrumentation-"
+    elif [[ "$repository_value" =~ autoinstrumentation- ]]; then
         continue
     fi
 
     # Check if the current tag matches the latest version
-    setd "latest_tag" "$(get_latest_tag "$repository_value")"
+    # The network explorer is a special case for how to update the involved images
+    if [[ "$path" =~ networkExplorer ]]; then
+      latest_tag=$(get_latest_tag "${repository_value}/splunk-network-explorer-kernel-collector")
+    else
+      latest_tag=$(get_latest_tag "$repository_value")
+    fi
+
     if [[ "$current_tag" != "$latest_tag" ]]; then
-        # Extract line number using yq for the tag_query and add the YAML_FILE_START_OFFSET to the
-        # extracted line number
-        setd "tag_line" "$(( $(yq -e ".$path.tag | line" "$values_file") + YAML_FILE_START_OFFSET ))"
-        matrix+="  { path: \"$path\",repository=$repository_value,current_tag=$current_tag,latest_tag=$latest_tag, tag_line: \"$tag_line\" },\n"
+        # Extract line number using yq for the tag query
+        tag_line=$(( $(yq -e ".$path.tag | line" "$values_file") + YAML_FILE_START_OFFSET ))
+        matrix+="\n  { path: \"$path\", repository: \"$repository_value\", current_tag: \"$current_tag\", latest_tag: \"$latest_tag\", tag_line: \"$tag_line\" },"
     fi
 done
 
