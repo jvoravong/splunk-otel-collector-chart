@@ -35,7 +35,7 @@ spec:
 {{- end }}
 {{- end }}
       containers:
-      - image: "{{ default .Values.networkExplorer.images.repository .Values.networkExplorer.cloudCollector.image.repository }}/{{ .Values.networkExplorer.cloudCollector.image.name }}:{{ default .Values.networkExplorer.images.tag .Values.networkExplorer.cloudCollector.image.tag }}"
+      - image: "{{ .Values.networkExplorer.cloudCollector.image.repository }}:{{ .Values.networkExplorer.cloudCollector.image.tag }}"
         imagePullPolicy: {{ .Values.networkExplorer.images.pullPolicy }}
         name: cloud-collector
 {{- if hasKey .Values.networkExplorer.cloudCollector "resources" }}
