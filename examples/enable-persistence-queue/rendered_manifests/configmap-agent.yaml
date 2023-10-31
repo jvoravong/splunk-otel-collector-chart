@@ -6,14 +6,13 @@ metadata:
   name: default-splunk-otel-collector-otel-agent
   labels:
     app.kubernetes.io/name: splunk-otel-collector
-    helm.sh/chart: splunk-otel-collector-0.86.1
-    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: splunk-otel-collector-0.86.73
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: "0.86.0"
+    app.kubernetes.io/version: "0.86.73"
     app: splunk-otel-collector
-    chart: splunk-otel-collector-0.86.1
+    chart: splunk-otel-collector-0.86.73
     release: default
-    heritage: Helm
+    heritage: helm
 data:
   relay: |
     exporters:
@@ -36,7 +35,7 @@ data:
           storage: file_storage/persistent_queue
         source: kubernetes
         splunk_app_name: splunk-otel-collector
-        splunk_app_version: 0.86.1
+        splunk_app_version: 0.86.73
         timeout: 10s
         tls:
           insecure_skip_verify: false
@@ -59,7 +58,7 @@ data:
           storage: file_storage/persistent_queue
         source: kubernetes
         splunk_app_name: splunk-otel-collector
-        splunk_app_version: 0.86.1
+        splunk_app_version: 0.86.73
         timeout: 10s
         tls:
           insecure_skip_verify: false
@@ -82,7 +81,7 @@ data:
           storage: file_storage/persistent_queue
         source: kubernetes
         splunk_app_name: splunk-otel-collector
-        splunk_app_version: 0.86.1
+        splunk_app_version: 0.86.73
         timeout: 10s
         tls:
           insecure_skip_verify: false

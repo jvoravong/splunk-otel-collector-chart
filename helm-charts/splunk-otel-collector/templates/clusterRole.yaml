@@ -8,18 +8,8 @@ metadata:
     app: {{ template "splunk-otel-collector.name" . }}
     chart: {{ template "splunk-otel-collector.chart" . }}
     release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    heritage: helm
 rules:
-{{- if eq (include "splunk-otel-collector.distribution" .) "openshift" }}
-- apiGroups:
-  - quota.openshift.io
-  resources:
-  - clusterresourcequotas
-  verbs:
-  - get
-  - list
-  - watch
-{{- end }}
 - apiGroups:
   - ""
   resources:

@@ -6,15 +6,14 @@ metadata:
   name: default-splunk-otel-collector-agent
   labels:
     app.kubernetes.io/name: splunk-otel-collector
-    helm.sh/chart: splunk-otel-collector-0.86.1
-    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: splunk-otel-collector-0.86.73
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: "0.86.0"
+    app.kubernetes.io/version: "0.86.73"
     app: splunk-otel-collector
     component: otel-collector-agent
-    chart: splunk-otel-collector-0.86.1
+    chart: splunk-otel-collector-0.86.73
     release: default
-    heritage: Helm
+    heritage: helm
     engine: fluentd
 spec:
   updateStrategy:
@@ -32,7 +31,7 @@ spec:
         component: otel-collector-agent
         release: default
       annotations:
-        checksum/config: 1e0ac324644614f5ee26ec4fe5a987d65f91f0f0486408efc989fdac624b540a
+        checksum/config: 4da8ac6838fb0ba684fd29c9e72c68c9bf24eea35ce34b4deab65f47110ea245
         kubectl.kubernetes.io/default-container: otel-collector
     spec:
       hostNetwork: true
@@ -48,7 +47,7 @@ spec:
           key: node-role.kubernetes.io/control-plane
       initContainers:
         - name: prepare-fluentd-config
-          image: splunk/fluentd-hec:1.3.3
+          image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-fluentd-hec:1.3.3
           imagePullPolicy: IfNotPresent
           command: [ "sh", "-c"]
           securityContext:
@@ -77,7 +76,7 @@ spec:
               mountPath: /fluentd/etc/json
       containers:
       - name: fluentd
-        image: splunk/fluentd-hec:1.3.3
+        image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-fluentd-hec:1.3.3
         imagePullPolicy: IfNotPresent
         securityContext:
           
@@ -134,7 +133,7 @@ spec:
         - name: otlp-http-old
           containerPort: 55681
           protocol: TCP
-        image: quay.io/signalfx/splunk-otel-collector:0.86.0
+        image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:0.86.73
         imagePullPolicy: IfNotPresent
         env:
           - name: SPLUNK_MEMORY_TOTAL_MIB

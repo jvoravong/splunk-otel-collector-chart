@@ -297,7 +297,6 @@ Common labels shared by all Kubernetes objects in this chart.
 {{- define "splunk-otel-collector.commonLabels" -}}
 app.kubernetes.io/name: {{ include "splunk-otel-collector.name" . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end -}}
@@ -332,11 +331,7 @@ compatibility with the old config group name: "otelAgent".
 The apiVersion for podDisruptionBudget policies.
 */}}
 {{- define "splunk-otel-collector.PDB-apiVersion" -}}
-{{- if (semverCompare ">= 1.21.0" .Capabilities.KubeVersion.Version) -}}
 {{- print "policy/v1" -}}
-{{- else -}}
-{{- print "policy/v1beta1" -}}
-{{- end -}}
 {{- end -}}
 
 {{/*
@@ -347,11 +342,11 @@ The name of the gateway service.
 {{- end -}}
 
 {{/*
-Whether the gateway is enabled, either through network explorer, or through its own flag.
+Whether the gateway is enabled, determined by the splunk-otel-collector.gateway template.
 */}}
 {{- define "splunk-otel-collector.gatewayEnabled" -}}
-{{- $gateway := fromYaml (include "splunk-otel-collector.gateway" .) }}
-{{- or $gateway.enabled .Values.networkExplorer.enabled }}
+{{- $gateway := include "splunk-otel-collector.gateway" . | fromYaml }}
+{{- $gateway.enabled }}
 {{- end -}}
 
 {{/*
