@@ -4,6 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "splunk-otel-collector-reducer.fullname" . }}
+  namespace: {{ template "splunk-otel-collector.namespace" . }}
   labels:
     helm.sh/chart: {{ include "splunk-otel-collector.chart" . }}
     app.kubernetes.io/name: {{ include "splunk-otel-collector-reducer.fullname" . }}

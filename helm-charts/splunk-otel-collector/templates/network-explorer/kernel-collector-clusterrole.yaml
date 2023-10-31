@@ -8,6 +8,7 @@ metadata:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ include "splunk-otel-collector-kernel-collector.fullname" . }}
+  namespace: {{ template "splunk-otel-collector.namespace" . }}
 rules:
 {{- if eq (include "splunk-otel-collector.distribution" .) "openshift" }}
 - apiGroups:

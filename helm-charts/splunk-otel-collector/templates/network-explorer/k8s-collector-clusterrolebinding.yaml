@@ -8,12 +8,15 @@ metadata:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ include "splunk-otel-collector-k8s-collector.fullname" . }}
+  namespace: {{ template "splunk-otel-collector.namespace" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: {{ include "splunk-otel-collector-k8s-collector.fullname" . }}
+  namespace: {{ template "splunk-otel-collector.namespace" . }}
 subjects:
 - kind: ServiceAccount
   name: {{ include "splunk-otel-collector-k8s-collector.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
+  namespace: {{ template "splunk-otel-collector.namespace" . }}
 {{- end -}}

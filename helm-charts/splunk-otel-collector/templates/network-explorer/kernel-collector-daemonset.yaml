@@ -8,6 +8,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ include "splunk-otel-collector-kernel-collector.fullname" . }}
+  namespace: {{ template "splunk-otel-collector.namespace" . }}
   annotations:
   labels:
     app.kubernetes.io/name: {{ include "splunk-otel-collector-kernel-collector.fullname" . }}
