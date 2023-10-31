@@ -5,6 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "splunk-otel-collector.fullname" . }}
+  namespace: {{ template "splunk-otel-collector.namespace" . }}
   labels:
     {{- include "splunk-otel-collector.commonLabels" . | nindent 4 }}
     app: {{ template "splunk-otel-collector.name" . }}
@@ -158,6 +159,7 @@ spec:
       - name: collector-configmap
         configMap:
           name: {{ template "splunk-otel-collector.fullname" . }}-otel-collector
+  namespace: {{ template "splunk-otel-collector.namespace" . }}
           items:
             - key: relay
               path: relay.yaml
