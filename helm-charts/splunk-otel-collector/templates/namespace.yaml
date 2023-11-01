@@ -1,0 +1,15 @@
+{{- if .Values.createNamespace }}
+# Specify namespace for ADOT Collector as a DaemonSet.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ template "splunk-otel-collector.fullname" . }}
+  labels:
+  labels:
+    {{- include "splunk-otel-collector.commonLabels" . | nindent 4 }}
+    app: {{ template "splunk-otel-collector.name" . }}
+    chart: {{ template "splunk-otel-collector.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    {{- include "adotCollector.daemonSet.labels" . | indent 4 }}
+{{- end }}

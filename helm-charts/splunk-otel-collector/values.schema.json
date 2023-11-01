@@ -20,7 +20,7 @@
       "description": "Override fully qualified app name.",
       "type": "string"
     },
-    "namespace": {
+    "namespaceOverride": {
       "description": "Override release namespace name.",
       "type": "string"
     },
