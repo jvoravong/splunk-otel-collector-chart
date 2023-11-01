@@ -7,9 +7,6 @@
 nameOverride: ""
 # fullnameOverride completely replaces the generated name.
 fullnameOverride: ""
-# namespace replaces the default installation namespace (use this value or --namespace during 'helm install')
-namespace: ""
-createNamespace: true
 
 ################################################################################
 # clusterName is a REQUIRED. It can be set to an arbitrary value that identifies
@@ -925,7 +922,7 @@ image:
 
   otelcol:
     # The registry and name of the opentelemetry collector image to pull
-    repository: quay.io/signalfx/splunk-otel-collector
+    repository:  "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector"
     # The tag of the Splunk OTel Collector image, default value is the chart appVersion
     tag: ""
     # The policy that specifies when the user wants the opentelemetry collector images to be pulled

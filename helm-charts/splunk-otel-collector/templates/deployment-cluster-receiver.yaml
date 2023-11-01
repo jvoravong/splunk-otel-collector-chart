@@ -206,7 +206,6 @@ spec:
       - name: collector-configmap
         configMap:
           name: {{ template "splunk-otel-collector.fullname" . }}-otel-k8s-cluster-receiver
-  namespace: {{ template "splunk-otel-collector.namespace" . }}
           items:
             - key: relay
               path: relay.yaml

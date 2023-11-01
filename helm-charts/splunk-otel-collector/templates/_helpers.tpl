@@ -26,17 +26,10 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
-Set the release namespace.
-If .Values.namespace is set (and not equal to "monitoring"), use it.
-Otherwise, use the default namespace from .Release.Namespace.
-If both .Values.namespace and --namespace flag are used, throw an error.
+Set the release namespace to "splunk-monitoring".
 */}}
 {{- define "splunk-otel-collector.namespace" -}}
-{{- if and (not (eq .Values.namespace "monitoring")) .Release.Namespace }}
-{{- fail "Cannot specify both .Values.namespace and --namespace flag." }}
-{{- else }}
-{{- default .Release.Namespace .Values.namespace }}
-{{- end }}
+{{- printf "splunk-monitoring" | quote -}}
 {{- end }}
 
 {{/*

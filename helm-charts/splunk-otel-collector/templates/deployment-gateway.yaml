@@ -159,7 +159,6 @@ spec:
       - name: collector-configmap
         configMap:
           name: {{ template "splunk-otel-collector.fullname" . }}-otel-collector
-  namespace: {{ template "splunk-otel-collector.namespace" . }}
           items:
             - key: relay
               path: relay.yaml
