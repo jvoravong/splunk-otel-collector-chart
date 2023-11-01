@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: default-splunk-otel-collector-k8s-cluster-receiver
-  namespace: "splunk-monitoring"
+  namespace: splunk-monitoring
   labels:
     app.kubernetes.io/name: splunk-otel-collector
     helm.sh/chart: splunk-otel-collector-0.86.1
@@ -31,7 +31,7 @@ spec:
         component: otel-k8s-cluster-receiver
         release: default
       annotations:
-        checksum/config: dac1677dbe671ff0b09dd6b4c99ace0b6cd295953688525603fa78970e29a986
+        checksum/config: 56d3ba12a43fb57f8f388d3cd3fb5b7f481a072b7f4b0166556f3836b2b08689
     spec:
       serviceAccountName: default-splunk-otel-collector
       nodeSelector:

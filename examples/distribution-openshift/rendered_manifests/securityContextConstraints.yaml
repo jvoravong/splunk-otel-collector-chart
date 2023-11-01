@@ -4,7 +4,7 @@ kind: SecurityContextConstraints
 apiVersion: security.openshift.io/v1
 metadata:
   name: default-splunk-otel-collector
-  namespace: "splunk-monitoring"
+  namespace: splunk-monitoring
   labels:
     app.kubernetes.io/name: splunk-otel-collector
     helm.sh/chart: splunk-otel-collector-0.86.1

@@ -568,22 +568,22 @@
           "type": "object"
         },
         "updateStrategy": {
-            "type": "string",
-            "enum": [
-                "OnDelete",
-                "RollingUpdate"
-            ]
+          "type": "string",
+          "enum": [
+            "OnDelete",
+            "RollingUpdate"
+          ]
         },
-	      "maxUnavailable": {
-	        "oneOf": [
-	          {
-	            "type": "string"
+        "maxUnavailable": {
+          "oneOf": [
+            {
+              "type": "string"
             },
             {
-	            "type": "integer"
-	          }
-	        ]
-	      },
+              "type": "integer"
+            }
+          ]
+        },
         "service": {
           "type": "object",
           "additionalProperties": false,
@@ -1057,7 +1057,7 @@
             }
           }
         },
-         "initPatchLogDirs": {
+        "initPatchLogDirs": {
           "type": "object",
           "additionalProperties": false,
           "properties": {

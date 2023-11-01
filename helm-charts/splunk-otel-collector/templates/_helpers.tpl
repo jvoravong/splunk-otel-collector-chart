@@ -29,7 +29,7 @@ If release name contains chart name it will be used as a full name.
 Set the release namespace to "splunk-monitoring".
 */}}
 {{- define "splunk-otel-collector.namespace" -}}
-{{- printf "splunk-monitoring" | quote -}}
+{{- printf "splunk-monitoring" -}}
 {{- end }}
 
 {{/*

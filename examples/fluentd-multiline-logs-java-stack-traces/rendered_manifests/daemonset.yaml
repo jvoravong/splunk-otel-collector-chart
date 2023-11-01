@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: default-splunk-otel-collector-agent
-  namespace: "splunk-monitoring"
+  namespace: splunk-monitoring
   labels:
     app.kubernetes.io/name: splunk-otel-collector
     helm.sh/chart: splunk-otel-collector-0.86.1
@@ -33,7 +33,7 @@ spec:
         component: otel-collector-agent
         release: default
       annotations:
-        checksum/config: c828963e1f346c9f5920ae22a00c3e83976b292e37f0f562269154a3339e2ca1
+        checksum/config: e2b99105d2cd52433ff7035eb6b5adacf0eaa1b065fa27555993a29d3316ba82
         kubectl.kubernetes.io/default-container: otel-collector
     spec:
       hostNetwork: true
@@ -49,7 +49,7 @@ spec:
           key: node-role.kubernetes.io/control-plane
       initContainers:
         - name: prepare-fluentd-config
-          image: splunk/fluentd-hec:1.3.3
+          image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-fluentd-hec:1.3.3
           imagePullPolicy: IfNotPresent
           command: [ "sh", "-c"]
           securityContext:
@@ -78,7 +78,7 @@ spec:
               mountPath: /fluentd/etc/json
       containers:
       - name: fluentd
-        image: splunk/fluentd-hec:1.3.3
+        image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-fluentd-hec:1.3.3
         imagePullPolicy: IfNotPresent
         securityContext:
           

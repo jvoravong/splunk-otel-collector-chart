@@ -914,7 +914,7 @@ image:
 
   fluentd:
     # The registry and name of the fluentd image to pull
-    repository: splunk/fluentd-hec
+    repository: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-fluentd-hec
     # The tag of the fluentd image to pull
     tag: 1.3.3
     # The policy that specifies when the user wants the fluentd images to be pulled
@@ -922,7 +922,7 @@ image:
 
   otelcol:
     # The registry and name of the opentelemetry collector image to pull
-    repository:  "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector"
+    repository:  709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector
     # The tag of the Splunk OTel Collector image, default value is the chart appVersion
     tag: ""
     # The policy that specifies when the user wants the opentelemetry collector images to be pulled
@@ -932,7 +932,7 @@ image:
   # Effective only if `agent.securityContext.runAsUser` and `agent.securityContext.runAsGroup` are set to non-zero values.
   initPatchLogDirs:
     # The registry and name of the Universal Base Image 9 image to pull
-    repository: registry.access.redhat.com/ubi9/ubi
+    repository: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-ubi9
     # The tag of the Universal Base Image 9, default value is latest
     tag: ""
     # The policy that specifies when the user wants the Universal Base images to be pulled
