@@ -14,7 +14,6 @@ on:
         description: 'Enable debug mode'
         required: false
         default: 'false'
-
 jobs:
   generate_matrix:
     runs-on: ubuntu-latest
@@ -25,18 +24,33 @@ jobs:
       - name: Generate GitHub Workflow Matrix
         id: generate_matrix
         run: |
-          matrix=$(./ci_scripts/update-instrumentation-dependencies.sh generate_github_workflow_matrix)
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          matrix:
+            include:
+              - path: "networkExplorer.images"
+                repository: "quay.io/signalfx"
+                current_tag: "latest-v0.9"
+                latest_tag: "latest-v0.10"
+                tag_line: "1137"
+              - path: "operator.instrumentation.spec.java"
+                repository: "ghcr.io/signalfx/splunk-otel-java/splunk-otel-java"
+                current_tag: "v1.28.0"
+                latest_tag: "v1.29.0"
+                tag_line: "1429"
+              - path: "operator.instrumentation.spec.nodejs"
+                repository: "ghcr.io/signalfx/splunk-otel-js/splunk-otel-js"
+                current_tag: "v2.4.4"
+                latest_tag: "v2.5.0"
+                tag_line: "1432"
+          echo "matrix:\n$matrix" >> "$GITHUB_OUTPUT"
 
   update-images:
     needs: generate_matrix
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Define a dynamic matrix based on the output of the generate_matrix job
-        include: ${{ fromJson(needs.generate_matrix.outputs.matrix) }}
+        include: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
     steps:
-      - name: Run Update for ${{ matrix.language }}
+      - name: Run Update for ${{ matrix.path }}
         run: |
           path="${{ matrix.path }}"
           repository="${{ matrix.repository }}"

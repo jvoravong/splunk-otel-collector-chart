@@ -74,7 +74,7 @@ generate_github_workflow_matrix() {
         if [[ "$current_tag" != "$latest_tag" ]]; then
             # Extract line number using yq for the tag query
             tag_line=$(( $(yq -e ".$path.tag | line" "$VALUES_FILE_PATH") + YAML_FILE_START_OFFSET ))
-            matrix+=" { path: \"$path\", repository: \"$repository_value\", current_tag: \"$current_tag\", latest_tag: \"$latest_tag\", tag_line: \"$tag_line\" },"
+            matrix+="\n  { path: \"$path\", repository: \"$repository_value\", current_tag: \"$current_tag\", latest_tag: \"$latest_tag\", tag_line: \"$tag_line\" },"
         fi
     done
 
