@@ -24,11 +24,9 @@ get_latest_tag() {
     # Default for Docker Hub
     else
         local latest_api="https://registry.hub.docker.com/v2/repositories/$repo_value/tags/?page_size=2"  # Fetch only the two latest tags
-        echo $(curl -sL "$latest_api" | jq '.results[] | select(.name != "latest") | .name')
+        echo $(curl -sL "$latest_api" | jq -r '.results[] | select(.name != "latest") | .name')
     fi
 }
-
-
 
 values_file="$SCRIPT_DIR/../helm-charts/splunk-otel-collector/values.yaml"
 setd "YAML_FILE_START_OFFSET" "$(grep -nE '^[^#]' "$values_file" | head -1 | cut -d: -f1)"
@@ -37,7 +35,7 @@ setd "YAML_FILE_START_OFFSET" "$(grep -nE '^[^#]' "$values_file" | head -1 | cut
 setd "repository_paths" "$(yq e '.. | select(has("repository") and has("tag")) | path | join(".")' "$values_file")"
 
 # Initialize matrix variable
-matrix="matrix: { include: [\n"
+matrix="matrix: { include: ["
 
 IFS=$'\n'
 for path in $repository_paths; do
