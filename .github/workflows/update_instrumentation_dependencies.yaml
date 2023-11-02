@@ -2,7 +2,7 @@ name: Check for new instrumentation versions
 
 # Description:
 # This workflow is responsible for checking for new versions of Splunk instrumentation libraries
-# used in operator based auto-instrumentation and updating the values.yaml if necessary.
+# used in operator-based auto-instrumentation and updating the values.yaml if necessary.
 
 on:
   schedule:
@@ -15,25 +15,36 @@ on:
         required: false
         default: 'false'
 
-env:
-  VALUES_YAML: helm-charts/splunk-otel-collector/values.yaml
-  LATEST_API: https://api.github.com/repos/signalfx/splunk-otel-{lang}/releases/latest
-
 jobs:
-  maybe_update:
+  generate_matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Generate GitHub Workflow Matrix
+        id: generate_matrix
+        run: |
+          matrix=$(./ci_scripts/update-instrumentation-dependencies.sh generate_github_workflow_matrix)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  update-images:
+    needs: generate_matrix
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Add languages that require version updates here
-        language: ['java', 'nodejs']
+        # Define a dynamic matrix based on the output of the generate_matrix job
+        include: ${{ fromJson(needs.generate_matrix.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Update Version
-        id: swizzle_version
+      - name: Run Update for ${{ matrix.language }}
         run: |
-          echo "Update Splunk Operator Instrumentation for ${{ matrix.language }}"
+          path="${{ matrix.path }}"
+          repository="${{ matrix.repository }}"
+          current_tag="${{ matrix.current_tag }}"
+          latest_tag="${{ matrix.latest_tag }}"
+          tag_line="${{ matrix.tag_line }}"
 
+          echo "Updating Splunk Operator Instrumentation for $path"
           # Set debug argument if DEBUG_MODE is true
           DEBUG_ARG=""
           if [ "${{ github.event.inputs.DEBUG_MODE }}" == "true" ]; then
@@ -41,11 +52,12 @@ jobs:
           fi
 
           # Run the update script and handle errors
-          ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} $DEBUG_ARG || exit 1
+          # Emits output env vars NEED_UPDATE, TAG_LOCAL, and TAG_UPSTREAM
+          ./ci_scripts/update-images-operator-splunk.sh "$path" $DEBUG_ARG || exit 1
 
           # Check if an update is needed
           if [ "$NEED_UPDATE" -eq 0 ]; then
-            echo "No updates detected. Exiting."
+            echo "No updates detected for $path. Exiting."
             exit 0
           fi
 
@@ -54,14 +66,21 @@ jobs:
 
           echo "Displaying current git diff..."
           git --no-pager diff
+
+      - name: Set Git Config
+        if: ${{ steps.update-images.outputs.NEED_UPDATE == 1 }}
+        run: |
+          # Set global Git config for author and committer
+          ./ci_scripts/base_util.sh setup_git
+
       - name: PR the new version
-        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        if: ${{ steps.update-images.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: Update ${{ matrix.language }} instrumentation version
-          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
-          body: Use the new version of the ${{ matrix.language }} instrumentation
-          branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
+          title: Bump ${{ matrix.language }} from ${{ steps.update-images.outputs.TAG_LOCAL }} to ${{ steps.update-images.outputs.TAG_UPSTREAM }} in ${{ env.VALUES_YAML }}
+          body: Use the latest version of ${{ matrix.language }}
+          branch: "update-${{ matrix.language }}" # Same branch name for all PRs
           base: main
           delete-branch: true
           modify-outputs: false
