@@ -29,6 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set Git Config
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          # Set global Git config for author and committer
+          ./ci_scripts/base_util.sh setup_git
+
       - name: Update Version
         id: swizzle_version
         run: |
@@ -40,10 +46,8 @@ jobs:
             DEBUG_ARG="--debug"
           fi
 
-          # Setup the git config for the bot user
-          ./ci_scripts/base_util.sh setup_git
-
           # Run the update script and handle errors
+          # Emits output env vars swizzle_version.outputs.TAG_LOCAL and steps.swizzle_version.outputs.TAG_UPSTREAM
           ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} $DEBUG_ARG || exit 1
 
           # Check if an update is needed
@@ -62,12 +66,56 @@ jobs:
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
         with:
-          author: release-bot <ssg-srv-gh-o11y-gdi@splunk.com>
-          committer: release-bot <ssg-srv-gh-o11y-gdi@splunk.com>
           commit-message: Update ${{ matrix.language }} instrumentation version
-          title: Update ${{ matrix.language }} instrumentation version to ${{ steps.swizzle_version.outputs.LATEST_VER }}
-          body: Use the new version of the ${{ matrix.language }} instrumentation
-          branch: "update-${{ matrix.language }}-${{ steps.swizzle_version.outputs.LATEST_VER }}"
+          title: Bump ${{ matrix.language }} from ${{ steps.swizzle_version.outputs.TAG_LOCAL }} to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }} in ${{ env.VALUES_YAML }}
+          body: Use the latest version of ${{ matrix.language }}
+          branch: "update-${{ matrix.language }}" # Same branch name for all PRs
           base: main
           delete-branch: true
           modify-outputs: false
+
+      - name: Set Git Config
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          # Set global Git config for author and committer
+          ./ci_scripts/base_util.sh setup_git
+
+      - name: Check Out Branch
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+
+          # Fetch the latest changes from the remote repository
+          git fetch
+
+          # Check out the existing "update-${{ matrix.language }}" branch
+          git checkout "update-${{ matrix.language }}" || git checkout -b "update-${{ matrix.language }}"
+
+      - name: Get PR Issue Number
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        id: pr_info
+        run: |
+          PR_URL=$(jq -r '.pull_request.html_url' $GITHUB_EVENT_PATH)
+          PR_ISSUE_NUMBER=$(basename $PR_URL)
+          echo "PR_ISSUE_NUMBER=$PR_ISSUE_NUMBER" >> $GITHUB_ENV
+
+      - name: Create Changelog
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          make chlog-new CHANGE_TYPE=enhancement COMPONENT=operator NOTE="Bump ${{ matrix.language }} to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }} in ${{ env.VALUES_YAML }}" ISSUES=${{ env.PR_ISSUE_NUMBER }}
+
+      - name: Commit and Push Changelog
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          # Debug
+          echo "jv debug"
+          git config --global user.email
+          git config --global user.name
+
+          # Add all changes and files
+          git add .
+
+          # Commit the changelog with a message
+          git commit -m "Add changelog for PR #${{ env.PR_ISSUE_NUMBER }}"
+
+          # Push the changes to the PR branch
+          git push origin "update-${{ matrix.language }}"

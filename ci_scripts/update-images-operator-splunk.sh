@@ -54,6 +54,8 @@ elif [[ -z "$TAG_LOCAL" || "$TAG_LOCAL" == "null" || "$TAG_LOCAL" != "$TAG_UPSTR
   debug "Upserting value for ${REPOSITORY_LOCAL}:${TAG_LOCAL}"
   yq eval -i ".${TAG_LOCAL_PATH} = \"$TAG_UPSTREAM\"" "${VALUES_FILE_PATH}"
   setd "NEED_UPDATE" 1  # Setting NEED_UPDATE to 1 as an update is required
+  emit_output "TAG_LOCAL"
+  emit_output "TAG_UPSTREAM"
 fi
 
 # Emit the NEED_UPDATE variable to either GitHub output or stdout

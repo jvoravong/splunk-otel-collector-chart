@@ -97,4 +97,5 @@ emit_output() {
 setup_git() {
   git config --global user.name release-bot
   git config --global user.email ssg-srv-gh-o11y-gdi@splunk.com
+  echo "set git config for release-bot (ssg-srv-gh-o11y-gdi@splunk.com)"
 }
