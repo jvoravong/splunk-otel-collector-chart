@@ -5,9 +5,6 @@ Splunk OpenTelemetry Collector is installed and configured to send data to Splun
 {{- if eq (include "splunk-otel-collector.splunkO11yEnabled" .) "true" }}
 Splunk OpenTelemetry Collector is installed and configured to send data to Splunk Observability realm {{ include "splunk-otel-collector.o11yRealm" . }}.
 {{ end }}
-{{- if .Values.networkExplorer.enabled }}
-Splunk Network Explorer is installed and configured.
-{{ end }}
 
 {{- if .Values.splunkRealm }}
 [WARNING] "splunkRealm" parameter is deprecated, please use "splunkObservability.realm" instead.
@@ -75,9 +72,3 @@ Splunk Network Explorer is installed and configured.
 [WARNING] "clusterReceiver.eventsEnabled" parameter is deprecated. Soon it will be replaced with "clusterReceiver.k8sObjects".
           Upgrade guidelines: https://github.com/signalfx/splunk-otel-collector-chart/blob/main/UPGRADING.md#0670-to-0680
 {{ end }}
-{{- if .Values.operator.enabled }}
-[INFO] You've enabled the operator's auto-instrumentation feature (operator.enabled=true), currently considered ALPHA.
-  - Instrumentation library maturity varies (e.g., Java is more mature than Go). For library stability, visit: https://opentelemetry.io/docs/instrumentation/#status-and-releases
-  - Some libraries may be enabled by default. For current status, see: https://github.com/open-telemetry/opentelemetry-operator#controlling-instrumentation-capabilities
-  - Splunk provides best-effort support for native OpenTelemetry libraries, and full support for Splunk library distributions. For used libraries, refer to the values.yaml under "operator.instrumentation.spec".
-{{- end }}
