@@ -53,11 +53,17 @@ if [ "$TAG_UPSTREAM" == "$TAG_LOCAL" ]; then
 elif [[ -z "$TAG_LOCAL" || "$TAG_LOCAL" == "null" || "$TAG_LOCAL" != "$TAG_UPSTREAM" ]]; then
   debug "Upserting value for ${REPOSITORY_LOCAL}:${TAG_LOCAL}"
 
-  # Use yq to get the line number of the tag to update
-  LINE_NUM=$(yq eval ".${TAG_LOCAL_PATH} | line" "${VALUES_FILE_PATH}")
+  # Calculate the offset to correct line numbers due to comments and blanks at the start of the values.yaml.
+  VALUES_FILE_START_OFFSET=$(( $(grep -nE '^[^#]' "$VALUES_FILE_PATH" | head -1 | cut -d: -f1) - 1 ))
+  setd "VALUES_FILE_START_OFFSET" "$VALUES_FILE_START_OFFSET"
 
-  # Use awk to replace the tag at the specified line number
-  awk -v LINE_NUM="$LINE_NUM" -v NEW_TAG="$TAG_UPSTREAM" 'NR == LINE_NUM {$0 = "    tag: \"" NEW_TAG "\""} 1' "${VALUES_FILE_PATH}" > temp_file.yaml && mv temp_file.yaml "${VALUES_FILE_PATH}"
+  # Determine the line number of the tag within the YAML structure, adjusted for the file's starting offset.
+  RELATIVE_LINE_NUM=$(yq eval ".${TAG_LOCAL_PATH} | line" "${VALUES_FILE_PATH}")
+  LINE_NUM=$(( RELATIVE_LINE_NUM + VALUES_FILE_START_OFFSET ))
+  setd "LINE_NUM" "$LINE_NUM"
+
+  # Replace only the tag value on the identified line, preserving the existing formatting and indentation.
+  awk -v LINE_NUM="$LINE_NUM" -v NEW_TAG="$TAG_UPSTREAM" 'NR == LINE_NUM {sub(/tag: .+$/, "tag: " NEW_TAG "")} 1' "${VALUES_FILE_PATH}" > temp_file.yaml && mv temp_file.yaml "${VALUES_FILE_PATH}"
 
   NEED_UPDATE=1  # Setting NEED_UPDATE to 1 as an update is required
   debug "Tag updated from $TAG_LOCAL to $TAG_UPSTREAM, NEED_UPDATE set to $NEED_UPDATE"
