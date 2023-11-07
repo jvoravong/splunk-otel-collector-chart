@@ -10,7 +10,7 @@
 #
 # Example Usage:
 #   ./update-images-operator-splunk.sh java
-#   ./update-images-operator-splunk.sh nodejs --debug
+#   ./update-images-operator-splunk.sh nodejs --debug=
 
 # Include the base utility functions for setting and debugging variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -29,21 +29,21 @@ fi
 setd "INST_LIB_NAME" "$1"
 
 # Set repository-related variables
-setd "REPO" "ghcr.io/${OWNER}/splunk-otel-${INST_LIB_NAME}/splunk-otel-${INST_LIB_NAME}"
-setd "REPOSITORY_LOCAL_PATH" "operator.instrumentation.spec.${INST_LIB_NAME}.repository"
-setd "REPOSITORY_LOCAL" "$(yq eval ".${REPOSITORY_LOCAL_PATH}" "${VALUES_FILE_PATH}")"
-setd "TAG_LOCAL_PATH" "operator.instrumentation.spec.${INST_LIB_NAME}.tag"
-setd "TAG_LOCAL" "$(yq eval ".${TAG_LOCAL_PATH}" "${VALUES_FILE_PATH}")"
+setd "INST_YAML_PATH" "operator.instrumentation.spec.${INST_LIB_NAME}"
+setd "IMAGE_REPOSITORY_URL" "$(yq eval ".${INST_YAML_PATH}.repository" "${VALUES_FILE_PATH}")"
+setd "IMAGE_REPOSITORY_NAME" "${IMAGE_REPOSITORY_URL##*/}"
+setd "TAG_LOCAL" "$(yq eval ".${INST_YAML_PATH}.tag" "${VALUES_FILE_PATH}")"
 
 # ---- Fetch Latest Version ----
 # Fetch the latest version from GitHub
-setd "LATEST_API" "https://api.github.com/repos/${OWNER}/splunk-otel-${INST_LIB_NAME}/releases/latest"
+
+setd "LATEST_API" "https://api.github.com/repos/${OWNER}/${IMAGE_REPOSITORY_NAME}/releases/latest"
 setd "LATEST_API_CURL" "curl -L -qs -H 'Accept: application/vnd.github+json' \"$LATEST_API\" | jq -r .tag_name"
 setd "TAG_UPSTREAM" "$(eval $LATEST_API_CURL)"
 
 # ---- Display Version Information ----
 # Display current and latest versions
-echo "${REPOSITORY_LOCAL} -> Local tag: ${TAG_LOCAL}, Latest tag: $TAG_UPSTREAM"
+echo "${IMAGE_REPOSITORY_URL} -> Local tag: ${TAG_LOCAL}, Latest tag: $TAG_UPSTREAM"
 
 # ---- Update Version Information ----
 # If needed, update the tag version in values.yaml
@@ -51,14 +51,14 @@ NEED_UPDATE="${NEED_UPDATE:-0}"  # Sets NEED_UPDATE to its current value or 0 if
 if [ "$TAG_UPSTREAM" == "$TAG_LOCAL" ]; then
   echo "We are already up to date. Nothing else to do."
 elif [[ -z "$TAG_LOCAL" || "$TAG_LOCAL" == "null" || "$TAG_LOCAL" != "$TAG_UPSTREAM" ]]; then
-  debug "Upserting value for ${REPOSITORY_LOCAL}:${TAG_LOCAL}"
+  debug "Upserting value for ${IMAGE_REPOSITORY_URL}:${TAG_LOCAL}"
 
   # Calculate the offset to correct line numbers due to comments and blanks at the start of the values.yaml.
   VALUES_FILE_START_OFFSET=$(( $(grep -nE '^[^#]' "$VALUES_FILE_PATH" | head -1 | cut -d: -f1) - 1 ))
   setd "VALUES_FILE_START_OFFSET" "$VALUES_FILE_START_OFFSET"
 
   # Determine the line number of the tag within the YAML structure, adjusted for the file's starting offset.
-  RELATIVE_LINE_NUM=$(yq eval ".${TAG_LOCAL_PATH} | line" "${VALUES_FILE_PATH}")
+  RELATIVE_LINE_NUM=$(yq eval ".${INST_YAML_PATH}.tag | line" "${VALUES_FILE_PATH}")
   LINE_NUM=$(( RELATIVE_LINE_NUM + VALUES_FILE_START_OFFSET ))
   setd "LINE_NUM" "$LINE_NUM"
 
