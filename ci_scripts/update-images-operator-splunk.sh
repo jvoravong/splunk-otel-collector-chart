@@ -47,13 +47,22 @@ echo "${REPOSITORY_LOCAL} -> Local tag: ${TAG_LOCAL}, Latest tag: $TAG_UPSTREAM"
 
 # ---- Update Version Information ----
 # If needed, update the tag version in values.yaml
-setd "NEED_UPDATE" "${NEED_UPDATE:-0}"  # Sets NEED_UPDATE to its current value or 0 if not set
+NEED_UPDATE="${NEED_UPDATE:-0}"  # Sets NEED_UPDATE to its current value or 0 if not set
 if [ "$TAG_UPSTREAM" == "$TAG_LOCAL" ]; then
   echo "We are already up to date. Nothing else to do."
 elif [[ -z "$TAG_LOCAL" || "$TAG_LOCAL" == "null" || "$TAG_LOCAL" != "$TAG_UPSTREAM" ]]; then
   debug "Upserting value for ${REPOSITORY_LOCAL}:${TAG_LOCAL}"
-  yq eval -i ".${TAG_LOCAL_PATH} = \"$TAG_UPSTREAM\"" "${VALUES_FILE_PATH}"
-  setd "NEED_UPDATE" 1  # Setting NEED_UPDATE to 1 as an update is required
+
+  # Use yq to get the line number of the tag to update
+  LINE_NUM=$(yq eval ".${TAG_LOCAL_PATH} | line" "${VALUES_FILE_PATH}")
+
+  # Use awk to replace the tag at the specified line number
+  awk -v LINE_NUM="$LINE_NUM" -v NEW_TAG="$TAG_UPSTREAM" 'NR == LINE_NUM {$0 = "    tag: \"" NEW_TAG "\""} 1' "${VALUES_FILE_PATH}" > temp_file.yaml && mv temp_file.yaml "${VALUES_FILE_PATH}"
+
+  NEED_UPDATE=1  # Setting NEED_UPDATE to 1 as an update is required
+  debug "Tag updated from $TAG_LOCAL to $TAG_UPSTREAM, NEED_UPDATE set to $NEED_UPDATE"
+
+  # Emit the output for the updated tags
   emit_output "TAG_LOCAL"
   emit_output "TAG_UPSTREAM"
 fi
