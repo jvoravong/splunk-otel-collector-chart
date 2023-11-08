@@ -11,16 +11,6 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 rules:
-{{- if eq (include "splunk-otel-collector.distribution" .) "openshift" }}
-- apiGroups:
-  - quota.openshift.io
-  resources:
-  - clusterresourcequotas
-  verbs:
-  - get
-  - list
-  - watch
-{{- end }}
 - apiGroups:
   - ""
   resources:
