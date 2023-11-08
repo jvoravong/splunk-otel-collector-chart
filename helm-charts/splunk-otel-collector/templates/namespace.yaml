@@ -7,4 +7,3 @@ metadata:
     app: {{ template "splunk-otel-collector.name" . }}
     chart: {{ template "splunk-otel-collector.chart" . }}
     release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}

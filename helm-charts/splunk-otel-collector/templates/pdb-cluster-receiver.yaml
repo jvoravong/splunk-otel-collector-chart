@@ -1,5 +1,5 @@
 {{- if and (eq (include "splunk-otel-collector.clusterReceiverEnabled" . ) "true" ) .Values.podDisruptionBudget }}
-apiVersion: {{ include "splunk-otel-collector.PDB-apiVersion" . }}
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ template "splunk-otel-collector.fullname" . }}-otel-k8s-cluster-receiver
@@ -10,7 +10,6 @@ metadata:
     component: otel-k8s-cluster-receiver
     chart: {{ template "splunk-otel-collector.chart" . }}
     release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
     app.kubernetes.io/component: otel-k8s-cluster-receiver
 spec:
   selector:

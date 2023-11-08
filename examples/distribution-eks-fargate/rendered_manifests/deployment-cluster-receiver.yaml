@@ -7,15 +7,13 @@ metadata:
   namespace: splunk-monitoring
   labels:
     app.kubernetes.io/name: splunk-otel-collector
-    helm.sh/chart: splunk-otel-collector-0.86.4
-    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: splunk-otel-collector-0.86.37
     app.kubernetes.io/instance: default
     app.kubernetes.io/version: "0.86.0"
     app: splunk-otel-collector
     component: otel-k8s-cluster-receiver
-    chart: splunk-otel-collector-0.86.4
+    chart: splunk-otel-collector-0.86.37
     release: default
-    heritage: Helm
     app.kubernetes.io/component: otel-k8s-cluster-receiver
 spec:
   replicas: 2
@@ -33,7 +31,7 @@ spec:
         component: otel-k8s-cluster-receiver
         release: default
       annotations:
-        checksum/config: 641b5c3b84613ce014fe74c5593dab511d18249bb6beeba7df7c2443adc9eca1
+        checksum/config: 12f06a1d3c35e8140413eababbfd10e6391d0057c88c9be8527d8e23ca74ed02
     spec:
       serviceAccountName: default-splunk-otel-collector
       nodeSelector:
@@ -48,27 +46,6 @@ spec:
                 values:
                 - otel-k8s-cluster-receiver
             topologyKey: kubernetes.io/hostname
-      initContainers:
-        - name: cluster-receiver-node-discoverer
-          image: public.ecr.aws/amazonlinux/amazonlinux:latest
-          imagePullPolicy: IfNotPresent
-          command: ["bash", "-c", "/splunk-scripts/init-eks-fargate-cluster-receiver.sh"]
-          env:
-            - name: K8S_POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: K8S_NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-          volumeMounts:
-            - name: init-eks-fargate-cluster-receiver-script
-              mountPath: /splunk-scripts
-            - name: messages
-              mountPath: /splunk-messages
-            - mountPath: /conf
-              name: collector-configmap
       containers:
       - name: otel-collector
         command:
@@ -136,12 +113,3 @@ spec:
       - name: run-collectd
         emptyDir:
           sizeLimit: 25Mi
-      - name: init-eks-fargate-cluster-receiver-script
-        configMap:
-          name: default-splunk-otel-collector-cr-node-discoverer-script
-          items:
-            - key: script
-              path: init-eks-fargate-cluster-receiver.sh
-              mode: 0555
-      - name: messages
-        emptyDir: {}
