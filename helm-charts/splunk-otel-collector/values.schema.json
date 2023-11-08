@@ -246,6 +246,10 @@
         "otel"
       ]
     },
+    "k8sVersion": {
+      "description": "Version of Kubernetes environment",
+      "type": "string"
+    },
     "cloudProvider": {
       "description": "Cloud provider where the collector is running",
       "type": "string",
