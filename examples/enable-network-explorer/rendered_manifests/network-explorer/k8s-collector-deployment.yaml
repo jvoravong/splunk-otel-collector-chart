@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/instance: default
     spec:
       containers:
-      - image: "quay.io/signalfx/splunk-network-explorer-k8s-watcher:latest-v0.9"
+      - image: "quay.io/signalfx/splunk-network-explorer-k8s-watcher:latest-v0.10"
         imagePullPolicy: Always
         name: k8s-watcher
         args:
@@ -44,7 +44,7 @@ spec:
       # k8s-relay, which is a service that the k8s-watcher talks to.
       # Currently not configurable, has to be reachable on localhost:8172, so must
       # share a pod with the k8s-watcher above.
-      - image: "quay.io/signalfx/splunk-network-explorer-k8s-relay:latest-v0.9"
+      - image: "quay.io/signalfx/splunk-network-explorer-k8s-relay:latest-v0.10"
         imagePullPolicy: Always
         name: k8s-relay
         args:

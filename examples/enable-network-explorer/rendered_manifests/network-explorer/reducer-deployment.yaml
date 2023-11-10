@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: reducer
-          image: "quay.io/signalfx/splunk-network-explorer-reducer:latest-v0.9"
+          image: "quay.io/signalfx/splunk-network-explorer-reducer:latest-v0.10"
           imagePullPolicy: Always
           args:
             - --port=7000

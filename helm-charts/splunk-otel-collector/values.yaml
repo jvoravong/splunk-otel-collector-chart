@@ -1133,7 +1133,7 @@ service:
 networkExplorer:
   enabled: false
   images:
-    tag: latest-v0.9
+    tag: latest-v0.10
     repository: quay.io/signalfx
     pullPolicy: Always
 
