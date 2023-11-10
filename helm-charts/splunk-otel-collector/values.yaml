@@ -922,7 +922,7 @@ image:
 
   otelcol:
     # The registry and name of the opentelemetry collector image to pull
-    repository:  709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector
+    repository:  709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app
     # The tag of the Splunk OTel Collector image, default value is the chart appVersion
     tag: ""
     # The policy that specifies when the user wants the opentelemetry collector images to be pulled
