@@ -29,8 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: chainguard-dev/actions/setup-gitsign@main
-
       - name: Update Version
         id: swizzle_version
         run: |
@@ -52,9 +50,6 @@ jobs:
             exit 0
           fi
 
-          echo "Rendering chart template..."
-          make render
-
           echo "Displaying current git diff..."
           git --no-pager diff
 
@@ -71,16 +66,9 @@ jobs:
           delete-branch: true
           modify-outputs: false
 
-      - name: Set Git Config
-        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
-        run: |
-          # Set global Git config for author and committer
-          ./ci_scripts/base_util.sh setup_git
-
       - name: Check Out Branch
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         run: |
-
           # Fetch the latest changes from the remote repository including any new branches
           git fetch --all
 
@@ -95,24 +83,27 @@ jobs:
             exit 1
           fi
 
+      - name: Render Chart Examples
+        if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
+        run: |
+          echo "jv debug"
+          git status
+          echo "Rendering chart template..."
+          ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} || exit 1
+          make render || exit 1
+
       - name: Create Changelog
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         run: |
-          # Run the update script and handle errors
-          # Emits output env vars swizzle_version.outputs.TAG_LOCAL and steps.swizzle_version.outputs.TAG_UPSTREAM
-          ./ci_scripts/update-images-operator-splunk.sh ${{ matrix.language }} $DEBUG_ARG || exit 1
-
-          echo "Rendering chart template..."
-          make render
-
-          make chlog-new CHANGE_TYPE=enhancement COMPONENT=operator NOTE="Bump ${{ matrix.language }} to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }} in ${{ env.VALUES_YAML }}" ISSUES=[${{ steps.swizzle_pr.outputs.pull-request-number }}]
+          make chlog-new CHANGE_TYPE=enhancement COMPONENT=operator NOTE="Bump ${{ matrix.language }} to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }} in ${{ env.VALUES_YAML }}" ISSUES=[${{ steps.swizzle_pr.outputs.pull-request-number }}] || exit 1
+          git add --all
 
       - name: Update PR with changelog
         if: ${{ steps.swizzle_version.outputs.NEED_UPDATE == 1 }}
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: Update ${{ matrix.language }} instrumentation version
-          committer: release-bot <ssg-srv-gh-o11y-gdi@splunk.com>
+          title: Bump ${{ matrix.language }} from ${{ steps.swizzle_version.outputs.TAG_LOCAL }} to ${{ steps.swizzle_version.outputs.TAG_UPSTREAM }} in ${{ env.VALUES_YAML }}
           body: Use the latest version of ${{ matrix.language }}
           branch: "update-${{ matrix.language }}" # Same branch name for all PRs
           base: main
