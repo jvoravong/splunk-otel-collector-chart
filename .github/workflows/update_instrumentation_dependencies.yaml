@@ -23,6 +23,7 @@ jobs:
   maybe_update:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false  # Set this to false to keep all jobs running even if one fails
       matrix:
         # Add docker images that require version updates here
         include:
@@ -40,7 +41,7 @@ jobs:
             yaml_value_path: 'image.fluentd'
           - name: 'splunk-ci'
             yaml_file_path: 'ci_scripts/k8s-splunk.yml'
-            yaml_value_path: 'spec.containers[0].image'
+            yaml_value_path: 'select(.kind == \"Pod\").spec.containers[] | select(.name == \"splunk\").image'
     steps:
       - uses: actions/checkout@v4
 
