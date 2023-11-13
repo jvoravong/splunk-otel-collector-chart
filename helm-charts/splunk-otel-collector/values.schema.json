@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/schema#",
+  "$schema": "https://json-schema.org/draft-07/schema",
   "type": "object",
   "required": [
     "clusterName",
@@ -571,22 +571,22 @@
           "type": "object"
         },
         "updateStrategy": {
-            "type": "string",
-            "enum": [
-                "OnDelete",
-                "RollingUpdate"
-            ]
+          "type": "string",
+          "enum": [
+            "OnDelete",
+            "RollingUpdate"
+          ]
         },
-	      "maxUnavailable": {
-	        "oneOf": [
-	          {
-	            "type": "string"
+        "maxUnavailable": {
+          "oneOf": [
+            {
+              "type": "string"
             },
             {
-	            "type": "integer"
-	          }
-	        ]
-	      },
+              "type": "integer"
+            }
+          ]
+        },
         "service": {
           "type": "object",
           "additionalProperties": false,
@@ -1060,7 +1060,7 @@
             }
           }
         },
-         "initPatchLogDirs": {
+        "initPatchLogDirs": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
