@@ -17,80 +17,30 @@ if [ -z "$DST_TAG" ]; then
     exit 1
 fi
 
-# Ensure jq is installed
-if ! command -v jq &> /dev/null; then
-    echo "jq could not be found. Please install it to continue."
+# Ensure Skopeo is installed
+if ! command -v skopeo &> /dev/null; then
+    echo "Skopeo could not be found. Please install it to continue."
     exit 1
 fi
 
 # Log in to the source repository if needed
 # echo "Logging in to source repository..."
-# docker login quay.io -u your-username -p your-password
+# skopeo login quay.io -u your-username -p your-password
 
 # Log in to the destination repository if needed
 # echo "Logging in to destination repository..."
-# aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $DST_REPO
+aws ecr get-login-password --region us-east-1 | skopeo login --username AWS --password-stdin $DST_REPO
 
-# Initialize the array for the manifests
-MANIFESTS=()
+# Copy the multi-architecture image from the source to the destination
+echo "Copying multi-architecture image from $SRC_REPO:$SRC_TAG to $DST_REPO:$DST_TAG..."
+skopeo copy --all "docker://$SRC_REPO:$SRC_TAG" "docker://$DST_REPO:$DST_TAG"
 
-# Pull, tag, and push images for all architectures
-echo "Starting to process architectures..."
-for digest in $(docker manifest inspect $SRC_REPO:$SRC_TAG | jq -r '.manifests[].digest'); do
-    ARCH_IMAGE="$SRC_REPO@$digest"
-    NEW_TAG="$DST_REPO:$DST_TAG-$(echo $digest | cut -d ":" -f2)"
-    IMAGE_ID=$(docker inspect --format='{{.Id}}' $ARCH_IMAGE)
-
-    echo "Processing image with ID $IMAGE_ID..."
-    docker pull $ARCH_IMAGE
-    if [ $? -ne 0 ]; then
-        echo "Failed to pull image $ARCH_IMAGE"
-        exit 1
-    fi
-
-    docker tag $ARCH_IMAGE $NEW_TAG
-    if [ $? -ne 0 ]; then
-        echo "Failed to tag image $ARCH_IMAGE as $NEW_TAG"
-        exit 1
-    fi
-
-    echo "Pushing image $NEW_TAG..."
-    docker push $NEW_TAG
-    if [ $? -ne 0 ]; then
-        echo "Failed to push image $NEW_TAG"
-        exit 1
-    fi
-
-    # Validate that the pushed image is good and has a size greater than 0
-    PUSHED_IMAGE_SIZE=$(docker inspect --format='{{.Size}}' $NEW_TAG)
-    if [ $? -ne 0 ] || [ "$PUSHED_IMAGE_SIZE" -le 0 ]; then
-        echo "Validation failed for image $NEW_TAG. Image is either invalid or has size 0."
-        exit 1
-    fi
-
-    echo "Image $NEW_TAG with ID $IMAGE_ID and size $PUSHED_IMAGE_SIZE pushed successfully."
-
-    MANIFESTS+=($NEW_TAG)
-done
-
-echo "Manifests created for the following images:"
-printf '%s\n' "${MANIFESTS[@]}"
-
-# Create and push the manifest list
-echo "Creating manifest list for $DST_REPO:$DST_TAG..."
-docker manifest create $DST_REPO:$DST_TAG "${MANIFESTS[@]}"
 if [ $? -ne 0 ]; then
-    echo "Failed to create the manifest list."
+    echo "Failed to copy the image."
     exit 1
 fi
 
-echo "Pushing manifest list..."
-docker manifest push $DST_REPO:$DST_TAG
-if [ $? -ne 0 ]; then
-    echo "Failed to push the manifest list."
-    exit 1
-fi
-docker manifest inspect $DST_REPO:$DST_TAG
+echo "Image copy completed successfully."
 
 # Fetch the source and destination manifests
 SRC_MANIFEST=$(docker manifest inspect $SRC_REPO:$SRC_TAG)
@@ -114,10 +64,19 @@ fi
 # ---- Package the Helm chart and upload to ECR ----
 # Define VERSION for packaging Helm chart
 VERSION=$(grep "^version:" "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml" | awk '{print $2}')
+DST_REG="709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk"
 if [ -z "$VERSION" ]; then
     echo "Chart version (VERSION) is empty. Please check the Chart.yaml file."
     exit 1
 fi
+
+# Authenticate Docker with ECR
+echo "Logging in to AWS ECR..."
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $DST_REG
+
+# Configure Helm for ECR
+echo "Configuring Helm for ECR..."
+export HELM_EXPERIMENTAL_OCI=1
 
 # Package the Helm chart
 helm package "$SCRIPT_DIR/../helm-charts/splunk-otel-collector" -d "$SCRIPT_DIR/../helm-charts/"
@@ -141,7 +100,7 @@ fi
 docker manifest inspect 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector:$VERSION
 
 # Verify the pushed Helm chart Docker image size
-HELM_IMAGE="$DST_REPO/splunk-otel-collector:$VERSION"
+HELM_IMAGE="$DST_REG/splunk-otel-collector:$VERSION"
 HELM_IMAGE_SIZE=$(docker inspect --format='{{.Size}}' $HELM_IMAGE)
 if [ $? -ne 0 ] || [ "$HELM_IMAGE_SIZE" -le 0 ]; then
     echo "Validation failed for Helm chart image $HELM_IMAGE. Image is either invalid or has size 0."
@@ -151,7 +110,6 @@ fi
 echo "Helm chart $CHART_FILE with size $HELM_IMAGE_SIZE uploaded successfully."
 
 # Optional: Clean up local images and chart packages after successful push
-# docker rmi $SRC_REPO:$SRC_TAG $DST_REPO:$DST_TAG
 # rm "$CHART_FILE"
 
 echo "All processes completed successfully."
