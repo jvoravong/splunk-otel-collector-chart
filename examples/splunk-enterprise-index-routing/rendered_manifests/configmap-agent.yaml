@@ -7,11 +7,11 @@ metadata:
   namespace: splunk-monitoring
   labels:
     app.kubernetes.io/name: splunk-otel-collector
-    helm.sh/chart: splunk-otel-collector-0.86.37
+    helm.sh/chart: splunk-otel-collector-0.86.59
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: "0.86.0"
+    app.kubernetes.io/version: "0.86.59"
     app: splunk-otel-collector
-    chart: splunk-otel-collector-0.86.37
+    chart: splunk-otel-collector-0.86.59
     release: default
 data:
   relay: |
@@ -34,7 +34,7 @@ data:
           queue_size: 5000
         source: kubernetes
         splunk_app_name: splunk-otel-collector
-        splunk_app_version: 0.86.37
+        splunk_app_version: 0.86.59
         timeout: 10s
         tls:
           insecure_skip_verify: false
