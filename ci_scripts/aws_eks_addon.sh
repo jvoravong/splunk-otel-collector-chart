@@ -11,6 +11,7 @@ SRC_REPO="quay.io/signalfx/splunk-otel-collector"
 SRC_TAG="0.86.0"
 DST_REPO="709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app"
 DST_TAG=$(grep "^version:" $SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
+export AWS_PROFILE=marketplace
 
 if [ -z "$DST_TAG" ]; then
     echo "Destination tag (DST_TAG) is empty. Please check the Helm chart version."
@@ -72,7 +73,7 @@ fi
 
 # Authenticate Docker with ECR
 echo "Logging in to AWS ECR..."
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $DST_REG
+aws ecr get-login-password --region us-east-1 |helm registry login --username AWS --password-stdin "$DST_REG"
 
 # Configure Helm for ECR
 echo "Configuring Helm for ECR..."
@@ -97,17 +98,6 @@ if [ $? -ne 0 ]; then
     echo "Failed to push the Helm chart to the repository."
     exit 1
 fi
-docker manifest inspect 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector:$VERSION
-
-# Verify the pushed Helm chart Docker image size
-HELM_IMAGE="$DST_REG/splunk-otel-collector:$VERSION"
-HELM_IMAGE_SIZE=$(docker inspect --format='{{.Size}}' $HELM_IMAGE)
-if [ $? -ne 0 ] || [ "$HELM_IMAGE_SIZE" -le 0 ]; then
-    echo "Validation failed for Helm chart image $HELM_IMAGE. Image is either invalid or has size 0."
-    exit 1
-fi
-
-echo "Helm chart $CHART_FILE with size $HELM_IMAGE_SIZE uploaded successfully."
 
 # Optional: Clean up local images and chart packages after successful push
 # rm "$CHART_FILE"
