@@ -13,7 +13,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: {{ template "splunk-otel-collector.fullname" . }}
-  namespace: {{ template "splunk-otel-collector.namespace" . }}
 subjects:
 - kind: ServiceAccount
   name: {{ template "splunk-otel-collector.serviceAccountName" . }}
