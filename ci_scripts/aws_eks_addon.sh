@@ -32,7 +32,9 @@ verify_directory_not_exist "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/tem
 
 # Set source and destination repository and tags
 SRC_REPO="quay.io/signalfx/splunk-otel-collector"
-SRC_TAG=$(grep "^appVersion:" $SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
+SRC_TAG="0.86.0"
+# TODO: Lookup source tag in future chart versions
+# SRC_TAG=$(grep "^appVersion:" $SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
 DST_REG="709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk"
 DST_REPO="$DST_REG/splunk-otel-collector-app"
 DST_TAG=$(grep "^version:" $SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
