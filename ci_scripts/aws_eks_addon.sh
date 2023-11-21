@@ -4,13 +4,19 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/base_util.sh"
 
+# TODO: Add skopeo copy code for these images
+# ---- Copy Collector Docker Image to ECR ----
+# 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-fluentd-hec:1.3.3
+# ---- Copy Collector Docker Image to ECR ----
+# 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-ubi9:9.2-755.1697625012
+
 # ---- Copy Collector Docker Image to ECR ----
 
 # Set source and destination repository and tags
 SRC_REPO="quay.io/signalfx/splunk-otel-collector"
-SRC_TAG="0.86.0"
+SRC_TAG=$(grep "^appVersion:" $SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
 DST_REG="709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk"
-DST_REPO=$DST_REG/splunk-otel-collector-app
+DST_REPO="$DST_REG/splunk-otel-collector-app"
 DST_TAG=$(grep "^version:" $SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
 
 if [ -z "$DST_TAG" ]; then
@@ -128,8 +134,8 @@ fi
 
 # TODO: Add a check here to see if a the same helm chart docker image has already been uploaded, the naming conflict makes it tricky
 # Push the packaged Helm chart to the repository
-echo "Pushing the Helm chart $CHART_FILE to the repository..."
-helm push "$CHART_FILE" oci://709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk
+echo "Pushing the Helm chart $CHART_FILE to the repository oci://$DST_REG/splunk-otel-collector"
+helm push "$CHART_FILE" "oci://$DST_REG"
 
 # Check for successful push
 if [ $? -ne 0 ]; then
