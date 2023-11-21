@@ -4,6 +4,24 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/base_util.sh"
 
+# Function to verify directory does not exist
+verify_directory_not_exist() {
+    local directory=$1
+    if [ -d "$directory" ]; then
+        echo "Directory $directory still exists."
+        exit 1
+    else
+        echo "Verified: Directory $directory does not exist."
+    fi
+}
+
+# Remove any local temporary instances of subcharts
+rm -rf "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/charts"
+# Verify directories do not exist
+verify_directory_not_exist "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/charts"
+verify_directory_not_exist "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/templates/operator"
+verify_directory_not_exist "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/templates/network-explorer"
+
 # TODO: Add skopeo copy code for these images
 # ---- Copy Collector Docker Image to ECR ----
 # 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-fluentd-hec:1.3.3
