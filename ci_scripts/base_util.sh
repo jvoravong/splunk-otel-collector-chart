@@ -117,7 +117,13 @@ get_current_repo() {
     local current_repo
 
     # Determine the type of the value at the given yq path
-    value_type="$(yq eval-all "${yq_query_string} | type" "${yaml_file_path}")"
+    if [[ "$yq_query_string" =~ ^select\(.*\) || "$yq_query_string" =~ ^\..* ]]; then
+        # The path is a complex yq expression or a direct path starting with a dot
+        value_type="$(yq eval-all "${yq_query_string} | type" "${yaml_file_path}")"
+    else
+        # The path is a direct path without a leading dot, so prepend one
+        value_type="$(yq eval-all ".${yq_query_string} | type" "${yaml_file_path}")"
+    fi
 
     # Parse the repository from the image reference based on the value type
     if [[ "$value_type" == *'str'* ]]; then
@@ -211,18 +217,23 @@ get_latest_tag() {
        # Get the digest of the 'latest' tag if available
        local latest_digest=$(curl -sL "$tags_api" | jq -r '.results[] | select(.name == "latest").images[].digest' | head -1)
 
+       # Define a variable for the most recent tag
+       local most_recent_tag=""
+
        # If the 'latest' tag has a digest, find all tags with the same digest
        if [[ -n "$latest_digest" ]]; then
            # Retrieve all tags sharing the same digest
            local tags_with_same_digest=$(curl -sL "$tags_api" | jq -r --arg digest "$latest_digest" '.results[] | select(.images[].digest == $digest) | .name')
 
            # Filter tags to match semantic versioning and pick the most specific version
-           local most_recent_tag=$(echo "$tags_with_same_digest" | \
+           most_recent_tag=$(echo "$tags_with_same_digest" | \
              grep -E '^[0-9]+(\.[0-9]+)?(\.[0-9]+)?$' | \
              sort -rV | head -1)
-       else
-           # If 'latest' is unavailable or lacks a digest, retrieve the most recent semantic version
-           local most_recent_tag=$(curl -sL "$tags_api" | jq -r '.results[] | .name' | \
+       fi
+
+       # If no tag was found or 'latest' lacks a digest, retrieve the most recent semantic version
+       if [ -z "$most_recent_tag" ]; then
+           most_recent_tag=$(curl -sL "$tags_api" | jq -r '.results[] | .name' | \
              grep -E '^[0-9]+(\.[0-9]+)?(\.[0-9]+)?$' | \
              sort -rV | head -1)
        fi
@@ -271,7 +282,7 @@ update_version() {
     # Update the YAML file in-place with error checking. Uses awk to substitute only the specified line.
     if awk -v LINE_NUM="$adjusted_line_num" -v CURRENT_TAG="$current_tag" -v LATEST_TAG="$latest_tag" '
         NR == LINE_NUM {
-            gsub(":[[:space:]]*" CURRENT_TAG "$", ":" LATEST_TAG)
+            sub(/:[[:space:]]*[^[:space:]]+$/, ": " LATEST_TAG)
         }
         { print }' "$yaml_file_path" > "$temp_file"; then
         mv "$temp_file" "$yaml_file_path"
@@ -299,13 +310,13 @@ maybe_update_version() {
     local yaml_file_path="$1"
     local yq_query_string="$2"
 
-    echo "Checking for image tag updates in '$yaml_file_path' based on query '${yq_query_string}'"
+    echo "Checking for image tag updates in '$yaml_file_path' based on query '$yq_query_string'"
 
     # Fetch the current and latest tag using the helper functions
-    local current_tag=$(get_current_tag "$yaml_file_path" "${yq_query_string}")
+    local current_tag=$(get_current_tag "$yaml_file_path" "$yq_query_string")
     echo "Current tag found: $current_tag"
 
-    local image_repository=$(get_current_repo "$yaml_file_path" "${yq_query_string}")
+    local image_repository=$(get_current_repo "$yaml_file_path" "$yq_query_string")
     echo "Image repository identified: $image_repository"
 
     local latest_tag=$(get_latest_tag "$image_repository")
@@ -321,7 +332,7 @@ maybe_update_version() {
         emit_output "NEED_UPDATE"
         emit_output "CURRENT_TAG"
         emit_output "LATEST_TAG"
-        update_version "${yq_query_string}" "$yaml_file_path" "$latest_tag"
+        update_version "$yq_query_string" "$yaml_file_path" "$latest_tag"
         echo "Update complete. Tag changed to $latest_tag."
     else
         echo "No update required. Current tag ($current_tag) is the latest version."

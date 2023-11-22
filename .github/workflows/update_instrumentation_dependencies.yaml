@@ -35,9 +35,10 @@ jobs:
           - name: 'fluentd-hec'
             yaml_file_path: 'helm-charts/splunk-otel-collector/values.yaml'
             yaml_value_path: '.image.fluentd'
-          - name: 'splunk'
-            yaml_file_path: 'ci_scripts/k8s-splunk.yml'
-            yaml_value_path: 'select(.kind == \\\"Pod\\\").spec.containers[] | select(.name == \\\"splunk\\\")'
+          # TODO: Add support for Splunk image
+          # - name: 'splunk'
+          #  yaml_file_path: 'ci_scripts/k8s-splunk.yml'
+          #  yaml_value_path: 'select(.kind == \\\"Pod\\\").spec.containers[] | select(.name == \\\"splunk\\\")'
     steps:
       - uses: actions/checkout@v4
 
