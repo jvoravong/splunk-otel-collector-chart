@@ -2,6 +2,8 @@
 # The general settings and variables for the project
 SHELL := /bin/bash
 
+ROOT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+
 # TODO: Move CHART_FILE_PATH and VALUES_FILE_PATH here, currently set in multiple places
 # The version of the splunk-otel-collector chart
 VERSION := $(shell grep "^version:" helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $$2}')
@@ -136,3 +138,17 @@ cmctl: ## Downloads and installs cmctl, the CLI for cert-manager, to your local 
 	mv $$TMP_DIR/cmctl $(CMCTL) ;\
 	rm -rf $$TMP_DIR ;\
 	}
+
+##@ CI Scripts
+# Tasks related to continous integration
+
+# Example Usage:
+#   make update-docker-image FILE_PATH=./path/to/values.yaml QUERY_STRING='.images.splunk'
+.PHONY: update-docker-image
+update-docker-image: ## Updates the Docker image tag in a YAML file to the latest version
+	@if [ -z "$(FILE_PATH)" ] || [ -z "$(QUERY_STRING)" ]; then \
+		echo "Error: FILE_PATH and QUERY_STRING are mandatory."; \
+		echo "Usage: make update-docker-image FILE_PATH=path/to/file.yaml QUERY_STRING='yq.query' [DEBUG=--debug]"; \
+		exit 1; \
+	fi
+	ci_scripts/update-docker-image.sh "$(FILE_PATH)" "$(QUERY_STRING)" $(DEBUG)

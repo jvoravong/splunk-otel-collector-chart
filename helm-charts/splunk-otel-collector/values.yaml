@@ -260,7 +260,7 @@ extraAttributes:
   # all the telemetry.
   custom: []
     # - name: "account_id"
-    #   value: "1234567890"
+  #   value: "1234567890"
 
 ################################################################################
 # OPTIONAL CONFIGURATIONS OF PARTICULAR O11Y COLLECTOR COMPONENTS
@@ -596,7 +596,7 @@ logsCollection:
     # Set to 0 to remove any size limit.
     maxRecombineLogSize: 1048576
 
-# Configuration for collecting journald logs using otel collector
+  # Configuration for collecting journald logs using otel collector
   journald:
     enabled: false
     # Please update directory path for journald if it's different from below default value "/var/log/journal"
@@ -701,6 +701,15 @@ fluentd:
     # Can be used if you want to run multiple instances of fluentd on the same host
     # https://docs.fluentd.org/input/tail#pos_file-highly-recommended
     posFilePrefix: /var/log/splunk-fluentd
+
+    # Specify the interval of refreshing the list of watch file. Defaults to 60 (seconds)
+    # uncomment the line below to override default behaviour
+    # refreshInterval: 60
+
+    # Enables the stat_watcher. Defaults to true.
+    # See: https://docs.fluentd.org/v1.0/articles/in_tail#enable_stat_watcher"
+    # uncomment the line below to disable it
+    # enableStatWatcher: false
 
     # `customFilters` defines the custom filters to be used.
     # This section can be used to define custom filters using plugins like https://github.com/splunk/fluent-plugin-jq
@@ -950,7 +959,7 @@ podDisruptionBudget: {}
   # Minimum number of pods (as a number or percentage) that must remain available.
   # minAvailable:
   # Maximum number of pods (as a number or percentage) that can be unavailable.
-  # maxUnavailable:
+# maxUnavailable:
 
 serviceAccount:
   # Specifies whether a ServiceAccount should be created
@@ -1163,10 +1172,10 @@ networkExplorer:
       name: ""
 
     tolerations:
-    - operator: "Exists"
-      effect: "NoExecute"
-    - operator: "Exists"
-      effect: "NoSchedule"
+      - operator: "Exists"
+        effect: "NoExecute"
+      - operator: "Exists"
+        effect: "NoSchedule"
 
     affinity: {}
     resources: {}
@@ -1282,7 +1291,7 @@ networkExplorer:
       # - ebpf_net.otlp_grpc.failed_requests
       # - ebpf_net.rpc_queue_buf_utilization
       ### to enable all metrics (including metrics turned off by default): ###
-      # - none
+    # - none
     enableMetrics: []
       ### Disable metrics flag is evaluated first and only then enable metric flag is evaluated. ###
       ### to enable an entire metric category: ###
@@ -1353,7 +1362,7 @@ networkExplorer:
       # - ebpf_net.collector_health
       # - ebpf_net.codetiming_sum_ns
       # - ebpf_net.otlp_grpc.failed_requests
-      # - ebpf_net.rpc_queue_buf_utilization
+    # - ebpf_net.rpc_queue_buf_utilization
     telemetryPort: 7000
     statsPromPort: 7001
     image:
@@ -1378,7 +1387,7 @@ networkExplorer:
       ##
       # seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
       # seccomp.security.alpha.kubernetes.io/defaultProfileName: 'docker/default'
-      # apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
+    # apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
 
 
 ################################################################################
@@ -1405,11 +1414,11 @@ operator:
       # will default to the gateway, given it is enabled. If neither the agent nor the gateway is enabled, the endpoint
       # must be overridden here.
       # exporter:
-        # endpoint: http://$(SPLUNK_OTEL_AGENT):4317
+      # endpoint: http://$(SPLUNK_OTEL_AGENT):4317
       # Optional "sampler" parameter for enabling trace sampling, see: https://opentelemetry.io/docs/concepts/sdk-configuration/general-sdk-configuration/#otel_traces_sampler
       # sampler:
-        # type: traceidratio
-        # argument: "0.95"
+      # type: traceidratio
+      # argument: "0.95"
       # Optional "environment variable" parameters that can configure all instrumentation libraries.
       # If splunkObservability.profilingEnabled=true, environment variables enabling profiling will be added automatically.
       # env:
