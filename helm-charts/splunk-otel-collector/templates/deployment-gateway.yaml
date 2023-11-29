@@ -12,7 +12,7 @@ metadata:
     component: otel-collector
     chart: {{ template "splunk-otel-collector.chart" . }}
     release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    heritage: helm
     app.kubernetes.io/component: otel-collector
   {{- if $gateway.annotations }}
   annotations:
