@@ -24,6 +24,10 @@
       "description": "Cluster name that will be used as metadata attributes for all telemetry data",
       "type": "string"
     },
+    "k8sversion": {
+      "description": "Version of Kubernetes environment",
+      "type": "string"
+    },
     "splunkPlatform": {
       "description": "Splunk Cloud / Splunk Enterprise configuration",
       "type": "object",
@@ -245,10 +249,6 @@
         "fluentd",
         "otel"
       ]
-    },
-    "k8sVersion": {
-      "description": "Version of Kubernetes environment",
-      "type": "string"
     },
     "cloudProvider": {
       "description": "Cloud provider where the collector is running",
