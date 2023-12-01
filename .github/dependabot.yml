@@ -1,6 +1,56 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "daily"
+      interval: daily
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: daily
+    groups:
+      # java:
+      #   repository: ghcr.io/signalfx/splunk-otel-java/splunk-otel-java
+      #   tag: v1.29.1
+      # nodejs:
+      #   repository: ghcr.io/signalfx/splunk-otel-js/splunk-otel-js
+      #   tag: v2.5.1
+      # go:
+      #   repository: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-go
+      #   tag: v0.8.0-alpha
+      # apache-httpd:
+      #   repository: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-apache-httpd
+      #   tag: 1.0.3
+      # python:
+      #   repository: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-python
+      #   tag: 0.41b0
+      # dotnet:
+      #   repository: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-dotnet
+      #   tag: 1.1.0
+      # nginx:
+      #   repository: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-nginx
+      #   tag: 1.0.3
+      operator-auto-instrumentation:
+        patterns:
+          - "*splunk-otel-*"
+          - "*opentelemetry-operator*"
+        exclude-patterns:
+          - "splunk-otel-collector"
+      # image: docker.io/splunk/splunk:8.2.0
+      splunk:
+        patterns:
+          - "splunk"
+        # repository: splunk/fluentd-hec
+        # tag: 1.3.3
+      splunk-fluend:
+        patterns:
+          - "fluentd-hec"
+      # repository: registry.access.redhat.com/ubi9/ubi
+      # tag: ""
+      redhat:
+        patterns:
+          - "*redhat*"
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: daily

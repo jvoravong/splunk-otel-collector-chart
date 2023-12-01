@@ -1,0 +1,57 @@
+name: Update Dependencies
+
+on:
+  schedule:
+    # Run every 12th hour at minute 45 past.
+    - cron: '45 */12 * * *'
+  workflow_dispatch:
+    inputs:
+      DEBUG_MODE:
+        description: 'Enable debug mode'
+        required: false
+        default: 'false'
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out dependabot-core repository
+        uses: actions/checkout@v2
+        with:
+          repository: dependabot/dependabot-core
+          path: dependabot-core
+
+      - name: Build dependabot-core Docker image
+        uses: docker/setup-buildx-action@v3
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            --build-arg "USER_UID=$(id -u)" \
+            --build-arg "USER_GID=$(id -g)" \
+            -t "dependabot/dependabot-core" dependabot-core/
+
+      - name: Check out dependabot-script repository
+        uses: actions/checkout@v2
+        with:
+          repository: dependabot/dependabot-script
+          path: dependabot-script
+
+      - name: Install dependencies
+        run: |
+          docker run -v "${{ github.workspace }}/dependabot-script:/home/dependabot/dependabot-script" -w /home/dependabot/dependabot-script dependabot/dependabot-core bundle install -j 3 --path vendor
+
+      - name: Run dependabot
+        run: |
+          PROJECT_PATH="${{ github.server_url }}/${{ github.repository }}"
+          echo "path: $PROJECT_PATH"
+
+          docker run  -v "${{ github.workspace }}/dependabot-script:/home/dependabot/dependabot-script" \
+                      -w '/home/dependabot/dependabot-script' \
+                      -e PACKAGE_MANAGER=docker \
+                      -e PROJECT_PATH=$PROJECT_PATH \
+                      -e DIRECTORY_PATH=/ \
+                      -e OPTIONS="$OPTIONS" \
+                      dependabot/dependabot-core bundle exec ruby ./generic-update-script.rb
+        env:
+          OPTIONS: |
+            { "kubernetes_updates": true }
