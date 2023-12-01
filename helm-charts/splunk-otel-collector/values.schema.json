@@ -24,7 +24,7 @@
       "description": "Cluster name that will be used as metadata attributes for all telemetry data",
       "type": "string"
     },
-    "k8sversion": {
+    "k8sVersion": {
       "description": "Version of Kubernetes environment",
       "type": "string"
     },
