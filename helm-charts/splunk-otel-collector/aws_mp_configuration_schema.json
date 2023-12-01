@@ -263,7 +263,7 @@
     },
     "provider": {
       "description": "[DEPRECATED] Cloud provider where the collector is running",
-      "type": "string",xk
+      "type": "string",
       "deprecated": true
     },
     "distribution": {
