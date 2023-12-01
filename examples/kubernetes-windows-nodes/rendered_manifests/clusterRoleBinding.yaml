@@ -4,20 +4,19 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: default-splunk-otel-collector
-  namespace: splunk-monitoring
   labels:
     app.kubernetes.io/name: splunk-otel-collector
-    helm.sh/chart: splunk-otel-collector-0.86.59
+    helm.sh/chart: splunk-otel-collector-0.86.68
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: "0.86.59"
+    app.kubernetes.io/version: "0.86.68"
     app: splunk-otel-collector
-    chart: splunk-otel-collector-0.86.59
+    chart: splunk-otel-collector-0.86.68
     release: default
+    heritage: helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: default-splunk-otel-collector
-  namespace: splunk-monitoring
 subjects:
 - kind: ServiceAccount
   name: default-splunk-otel-collector

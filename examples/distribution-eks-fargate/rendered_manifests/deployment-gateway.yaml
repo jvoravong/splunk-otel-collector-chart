@@ -4,16 +4,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: default-splunk-otel-collector
-  namespace: splunk-monitoring
   labels:
     app.kubernetes.io/name: splunk-otel-collector
-    helm.sh/chart: splunk-otel-collector-0.86.59
+    helm.sh/chart: splunk-otel-collector-0.86.68
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: "0.86.59"
+    app.kubernetes.io/version: "0.86.68"
     app: splunk-otel-collector
     component: otel-collector
-    chart: splunk-otel-collector-0.86.59
+    chart: splunk-otel-collector-0.86.68
     release: default
+    heritage: helm
     app.kubernetes.io/component: otel-collector
 spec:
   replicas: 3
@@ -29,7 +29,7 @@ spec:
         component: otel-collector
         release: default
       annotations:
-        checksum/config: fb6444f68038ac21514608bfe306f7d5e3d02fe5c49424d66fa98cf0d227cc64
+        checksum/config: 0a2f06d6e275a9e6f8f2edc5f56bd97f9e17b3831685464405c2254507c522e0
     spec:
       serviceAccountName: default-splunk-otel-collector
       nodeSelector:
@@ -39,7 +39,7 @@ spec:
         command:
         - /otelcol
         - --config=/conf/relay.yaml
-        image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:0.86.59
+        image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:0.86.68
         imagePullPolicy: IfNotPresent
         env:
           - name: SPLUNK_MEMORY_TOTAL_MIB

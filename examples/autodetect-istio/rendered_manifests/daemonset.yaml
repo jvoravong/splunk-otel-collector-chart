@@ -4,16 +4,16 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: default-splunk-otel-collector-agent
-  namespace: splunk-monitoring
   labels:
     app.kubernetes.io/name: splunk-otel-collector
-    helm.sh/chart: splunk-otel-collector-0.86.59
+    helm.sh/chart: splunk-otel-collector-0.86.68
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: "0.86.59"
+    app.kubernetes.io/version: "0.86.68"
     app: splunk-otel-collector
     component: otel-collector-agent
-    chart: splunk-otel-collector-0.86.59
+    chart: splunk-otel-collector-0.86.68
     release: default
+    heritage: helm
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -30,7 +30,7 @@ spec:
         component: otel-collector-agent
         release: default
       annotations:
-        checksum/config: b3f019f2fd5a72cf690369b2ad412a994bad13097d8b6577bceb7f420161d13a
+        checksum/config: 2ebd461a2d40cb51904563d2c89936b0215485479d073850e98ec62da29bd25c
         kubectl.kubernetes.io/default-container: otel-collector
         sidecar.istio.io/inject: "false"
     spec:
@@ -47,7 +47,7 @@ spec:
           key: node-role.kubernetes.io/control-plane
       initContainers:
         - name: migrate-checkpoint
-          image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:0.86.59
+          image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:0.86.68
           imagePullPolicy: IfNotPresent
           command: ["/migratecheckpoint"]
           securityContext:
@@ -120,7 +120,7 @@ spec:
           containerPort: 9411
           hostPort: 9411
           protocol: TCP
-        image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:0.86.59
+        image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:0.86.68
         imagePullPolicy: IfNotPresent
         securityContext:
           runAsUser: 0

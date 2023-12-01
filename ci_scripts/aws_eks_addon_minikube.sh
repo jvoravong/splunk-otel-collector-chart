@@ -1,15 +1,17 @@
 #!/bin/bash
-
+# Notes
+# - It may be useful to setup registry add-ons for Minikube
+#   - minikube addons configure registry-creds
+#   - https://minikube.sigs.k8s.io/docs/handbook/registry/
 # Include the base utility functions for setting and debugging variables
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/base_util.sh"
 
 # List of images to be processed
+TAG=$(grep "^version:" $SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
 IMAGES=(
-    "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector:0.86.66"
-    "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:0.86.66"
-    "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-fluentd-hec:1.3.3"
-    "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-ubi9:9.2-755.1697625012"
+    "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector:$TAG"
+    "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:$TAG"
 )
 
 export AWS_PROFILE=marketplace
@@ -25,6 +27,8 @@ for FULL_IMAGE_PATH in "${IMAGES[@]}"; do
 
     # Check if Minikube is running
     if minikube status &>/dev/null; then
+        eval $(minikube docker-env)
+        docker pull 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector:0.86.67
         echo "Minikube is running. Loading image into Minikube: ${FULL_IMAGE_PATH}"
         minikube image load "$FULL_IMAGE_PATH"
         echo "Image loaded into Minikube successfully."
