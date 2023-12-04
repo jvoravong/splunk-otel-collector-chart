@@ -16,6 +16,7 @@ verify_directory_not_exist() {
 }
 
 # Remove any local temporary instances of subcharts
+#rm -rf "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.lock"
 rm -rf "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/charts"
 # Verify directories do not exist
 verify_directory_not_exist "$SCRIPT_DIR/../helm-charts/splunk-otel-collector/charts"

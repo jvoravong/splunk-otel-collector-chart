@@ -10,7 +10,7 @@ source "$SCRIPT_DIR/base_util.sh"
 # List of images to be processed
 TAG=$(grep "^version:" $SCRIPT_DIR/../helm-charts/splunk-otel-collector/Chart.yaml | awk '{print $2}')
 IMAGES=(
-    "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector:$TAG"
+#    "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector:$TAG"
     "709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector-app:$TAG"
 )
 
@@ -28,7 +28,7 @@ for FULL_IMAGE_PATH in "${IMAGES[@]}"; do
     # Check if Minikube is running
     if minikube status &>/dev/null; then
         eval $(minikube docker-env)
-        docker pull 709825985650.dkr.ecr.us-east-1.amazonaws.com/splunk/splunk-otel-collector:0.86.67
+        docker pull "$FULL_IMAGE_PATH"
         echo "Minikube is running. Loading image into Minikube: ${FULL_IMAGE_PATH}"
         minikube image load "$FULL_IMAGE_PATH"
         echo "Image loaded into Minikube successfully."
