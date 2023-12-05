@@ -457,6 +457,9 @@ spec:
       opentelemetry.io/name: opentelemetry-demo-cartservice
   template:
     metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-dotnet: "monitoring/splunk-otel-collector"
+        instrumentation.opentelemetry.io/otel-dotnet-auto-runtime: "linux-musl-x64"
       labels:
         opentelemetry.io/name: opentelemetry-demo-cartservice
         app.kubernetes.io/instance: opentelemetry-demo
