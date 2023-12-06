@@ -38,6 +38,8 @@ jobs:
           # - name: 'splunk'
           #  yaml_file_path: 'ci_scripts/k8s-splunk.yml'
           #  yaml_value_path: 'select(.kind == \\\"Pod\\\").spec.containers[] | select(.name == \\\"splunk\\\")'
+    env:
+      DEBUG_MODE: ${{ github.event.inputs.DEBUG_MODE == 'true' }}
     steps:
       - uses: actions/checkout@v4
 
