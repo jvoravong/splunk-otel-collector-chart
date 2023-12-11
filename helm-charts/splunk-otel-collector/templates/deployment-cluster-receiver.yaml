@@ -16,7 +16,7 @@ metadata:
     component: otel-k8s-cluster-receiver
     chart: {{ template "splunk-otel-collector.chart" . }}
     release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    heritage: helm
     app.kubernetes.io/component: otel-k8s-cluster-receiver
   {{- if $clusterReceiver.annotations }}
   annotations:
@@ -80,29 +80,6 @@ spec:
       {{- if $clusterReceiver.securityContext }}
       securityContext:
         {{- include "splunk-otel-collector.securityContext" (dict "isWindows" .Values.isWindows "securityContext" $clusterReceiver.securityContext) | nindent 8 }}
-      {{- end }}
-      {{- if eq (include "splunk-otel-collector.distribution" .) "eks/fargate" }}
-      initContainers:
-        - name: cluster-receiver-node-discoverer
-          image: public.ecr.aws/amazonlinux/amazonlinux:latest
-          imagePullPolicy: IfNotPresent
-          command: ["bash", "-c", "/splunk-scripts/init-eks-fargate-cluster-receiver.sh"]
-          env:
-            - name: K8S_POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: K8S_NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-          volumeMounts:
-            - name: init-eks-fargate-cluster-receiver-script
-              mountPath: /splunk-scripts
-            - name: messages
-              mountPath: /splunk-messages
-            - mountPath: /conf
-              name: collector-configmap
       {{- end }}
       containers:
       - name: otel-collector
@@ -215,17 +192,6 @@ spec:
       - name: secret
         secret:
           secretName: {{ template "splunk-otel-collector.secret" . }}
-      {{- end }}
-      {{- if eq (include "splunk-otel-collector.distribution" .) "eks/fargate" }}
-      - name: init-eks-fargate-cluster-receiver-script
-        configMap:
-          name: {{ template "splunk-otel-collector.clusterReceiverNodeDiscovererScript" . }}
-          items:
-            - key: script
-              path: init-eks-fargate-cluster-receiver.sh
-              mode: 0555
-      - name: messages
-        emptyDir: {}
       {{- end }}
       {{- if $clusterReceiver.extraVolumes }}
       {{- toYaml $clusterReceiver.extraVolumes | nindent 6 }}

@@ -22,8 +22,11 @@
     },
     "clusterName": {
       "description": "Cluster name that will be used as metadata attributes for all telemetry data",
-      "type": "string",
-      "minLength": 1
+      "type": "string"
+    },
+    "k8sVersion": {
+      "description": "Version of Kubernetes environment",
+      "type": "string"
     },
     "splunkPlatform": {
       "description": "Splunk Cloud / Splunk Enterprise configuration",
@@ -568,22 +571,22 @@
           "type": "object"
         },
         "updateStrategy": {
-            "type": "string",
-            "enum": [
-                "OnDelete",
-                "RollingUpdate"
-            ]
+          "type": "string",
+          "enum": [
+            "OnDelete",
+            "RollingUpdate"
+          ]
         },
-	      "maxUnavailable": {
-	        "oneOf": [
-	          {
-	            "type": "string"
+        "maxUnavailable": {
+          "oneOf": [
+            {
+              "type": "string"
             },
             {
-	            "type": "integer"
-	          }
-	        ]
-	      },
+              "type": "integer"
+            }
+          ]
+        },
         "service": {
           "type": "object",
           "additionalProperties": false,
@@ -1063,7 +1066,7 @@
             }
           }
         },
-         "initPatchLogDirs": {
+        "initPatchLogDirs": {
           "type": "object",
           "additionalProperties": false,
           "properties": {

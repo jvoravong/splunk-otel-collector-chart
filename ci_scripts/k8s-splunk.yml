@@ -62,7 +62,7 @@ spec:
         - name: hec
           containerPort: 8088
           protocol: TCP
-        - name: management-api
+        - name: management-apisl
           containerPort: 8089
           protocol: TCP
       env:
