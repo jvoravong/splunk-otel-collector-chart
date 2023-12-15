@@ -74,6 +74,8 @@ maybe_update_chart_dependency_version() {
     fi
 }
 
+echo "failing now!"
+exit 1
 # ---- Update Version Information ----
 # Call the maybe_update_chart_dependency_version function to update the version if necessary
 maybe_update_chart_dependency_version
