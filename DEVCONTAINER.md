@@ -1,4 +1,12 @@
-# Splunk Otel Collector Helm Chart Development with DevContainers
+# Splunk Otel Collector Helm Chart Development with Dev Containers
+
+Utilize
+[Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
+in Visual Studio Code for a unified, containerized development environment.
+The configuration, managed through a
+[devcontainer.json](./.devcontainer/devcontainer.json)
+file, ensures source control managed developer tools, facilitating smooth and diverse usage across development environments and CI/CD workflows.
+This method helps support re-usability and adheres to the opensource Dev Container specifications, promoting collaborative and consistent software development.
 
 ## Prerequisites
 
@@ -174,3 +182,7 @@ If you're running Docker Desktop, you can adjust the allocated resources in the 
 - Steps for how to use Jetbrains (Goland) with the devcontainer
 - Steps for how to pair program remotely using a single devcontainer instance
 - Steps on how to spin up a chart demo in the Web UI using Github codespaces
+
+#### Questions
+How might one make devcontainer repository code changes within a local or remove container and also have these change propagate to the native local repository?
+How might one open and manage a PR using devcontainers?
