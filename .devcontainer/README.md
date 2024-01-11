@@ -1,8 +1,7 @@
 # Splunk Otel Collector Helm Chart Development with DevContainers
 
 Welcome to our Helm Chart Development project! This project uses a DevContainer environment to ensure a consistent and easily replicable development environment. If you're not familiar with DevContainers, they're a feature of Visual Studio Code that lets you define your development environment as code using Docker. This makes it easy to share, replicate, and version control your development environment. You can learn more about DevContainers in the [official documentation](https://code.visualstudio.com/docs/remote/containers).
-- This project's DevContainer includes a number of tools that are useful for Helm Chart development, including Kubernetes, Helm, brew, and git. The Dockerfile also clones a number of repositories that are used in the project.
-- The DevContainer also includes a mechanism for customizing the list of cloned repositories. The `REPO_URLS` environment variable in the `devcontainer.json` file specifies the repositories to clone. This variable is a semicolon-separated list of repository URLs. You can modify this list to include your own repositories, or you can override it with a `.env` file or shell environment variables.
+- This project's DevContainer includes a number of tools that are useful for Helm Chart development, including Kubernetes, Helm, apt, and git.
 - We hope this README has provided you with a good introduction to the project and how to use the DevContainer. If you have any questions or run into any issues, please feel free to open an issue in the GitHub repository. Happy coding!
 
 ## Getting Started
@@ -15,16 +14,14 @@ Once you have these prerequisites installed, you can clone this repository to yo
 git clone https://github.com/signalfx/splunk-otel-collector-chart.git
 ```
 
-Then, open the project in Visual Studio Code. You'll be prompted to reopen the project in a container. Select "Reopen in Container" to start the DevContainer.
+Then, open the project in Visual Studio Code. You'll be prompted to reopen the project in a container in a pop up window. Select "Reopen in Container" to start the DevContainer.
 
-If you're not automatically prompted to reopen the project in a container, you can manually start the DevContainer by pressing `F1` to open the command palette, typing "Remote-Containers: Reopen Folder in Container", and hitting `Enter`.
+> **_NOTE:_** If you're not automatically prompted to reopen the project in a container, you can manually start the DevContainer by pressing `F1` to open the command palette, typing "Remote-Containers: Reopen Folder in Container", and hitting `Enter`.
 
-Other usefule links:
-- https://code.visualstudio.com/docs/devcontainers/devcontainer-cli
-
-## Working with the DevContainer
+## Starting and Working with the DevContainer
 
 Once your DevContainer is running, you can start developing as if you were working locally. Visual Studio Code's features like IntelliSense, linting, and debugging all work in the DevContainer.
+You can also use the [devcontainer-cli](https://code.visualstudio.com/docs/devcontainers/devcontainer-cli) much like you would with other container clis like Docker or Kubernetes.
 
 ### Starting the DevContainer
 
@@ -46,17 +43,6 @@ To check the status of the DevContainer, you can use the "Remote-Containers: Sho
 
 If you've stopped your DevContainer and want to reconnect to it, you can use the "Remote-Containers: Attach to Running Container..." command in the command palette.
 
-### Using .env to clone a specific repository
-
-Create a file named `.env` in the same directory as your `devcontainer.json` file. Then, add the following line to the `.env` file:
-
-```
-REPO_URLS=https://github.com/{github_user}/splunk-otel-collector-chart.git
-```
-
-Replace `{github_user}` with your GitHub username. The `.env` file sets environment variables that will be used when the DevContainer starts. In this case, it overrides the `REPO_URLS` variable defined in `devcontainer.json`, so the DevContainer will clone the `splunk-otel-collector-chart` repository from your GitHub account.
-ontainer Image
-
 #### Prerequisites
 
 - Docker installed and running on your machine
@@ -66,7 +52,7 @@ ontainer Image
 
    Run the following command to build the Docker image:
 
-   ```
+   ```bash
    make docker-devcontainer-build
    ```
 
@@ -76,7 +62,7 @@ ontainer Image
 
    After successfully building the Docker image, you can push it to Docker Hub with the following command:
 
-   ```
+   ```bash
    make docker-devcontainer-push
    ```
 
@@ -100,4 +86,3 @@ For the best performance, we recommend the following minimum system resources fo
 Please note that these are just recommendations. The actual resources you need could be more or less depending on the specifics of your project. Also, remember that other applications running on your system will also use resources, so make sure to take that into account.
 
 If you're running Docker Desktop, you can adjust the allocated resources in the Docker Desktop settings. For other Docker installations, the process may vary.
-

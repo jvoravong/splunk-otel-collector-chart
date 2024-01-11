@@ -35,7 +35,4 @@
 ],
   "forwardPorts": [8080],
   "postCreateCommand": "echo 'Devcontainer is ready!'",
-  "env": {
-    "REPO_URLS": "https://github.com/jvoravong/splunk-otel-collector.git"
-  }
 }

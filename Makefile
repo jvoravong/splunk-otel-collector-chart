@@ -157,16 +157,37 @@ update-chart-dep: dep-update ## Updates the dependency version in the Chart.yaml
 	fi
 	ci_scripts/update-chart-dependency.sh $(CHART_PATH) $(SUBCHART_NAME) $(DEBUG_MODE)
 
-##@ Developer Setup
-# Tasks for using shared developer tools
+##@ DevContainer Actions
+# Tasks specific to managing the DevContainer environment
+
 DEV_CONTAINER_ORG = jvsplk # TODO: Add this to the main github repo or quay
 DEV_CONTAINER_IMAGE_NAME = splunk-otel-collector-chart-dev-container
 DEV_CONTAINER_IMAGE_TAG = latest
 
 .PHONY: docker-devcontainer-build
-docker-devcontainer-build: ## Builds the project devcontainer.p
+docker-devcontainer-build: ## Builds the project devcontainer.
 	docker build -t $(DEV_CONTAINER_ORG)/$(DEV_CONTAINER_IMAGE_NAME):$(DEV_CONTAINER_IMAGE_TAG) .devcontainer
 
 .PHONY: docker-devcontainer-push
 docker-devcontainer-push: ## Pushs the project devcontainer
 	docker push $(DEV_CONTAINER_ORG)/$(DEV_CONTAINER_IMAGE_NAME):$(DEV_CONTAINER_IMAGE_TAG)
+
+.PHONY: devcontainer-build
+devcontainer-build: ## Build or pre-build images for the devcontainer
+	@devcontainer build
+
+.PHONY: devcontainer-up
+devcontainer-up: ## Spin up containers with devcontainer.json settings
+	@devcontainer up
+
+.PHONY: devcontainer-exec
+devcontainer-exec: ## Execute a command in a container with proper environment
+	@devcontainer exec
+
+.PHONY: devcontainer-stop
+devcontainer-stop: ## Stop the devcontainer
+	@devcontainer stop
+
+.PHONY: devcontainer-down
+devcontainer-down: ## Stop and delete the devcontainer
+	@devcontainer down
