@@ -1,5 +1,5 @@
 {
-  "name": "Helm Chart Development",
+  "name": "splunk-otel-collector-chart-dev-container",
   "dockerFile": "Dockerfile",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
