@@ -1,14 +1,15 @@
 {
   "name": "splunk-otel-collector-chart-dev-container",
   "dockerFile": "Dockerfile",
+  // See: https://containers.dev/features
   "features": {
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/azure-cli:1": {},
     "ghcr.io/devcontainers/features/common-utils:2": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "enableNonRootDocker": "true",
-      "moby": "true"
-    },
+//    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+////      "enableNonRootDocker": "true",
+//      "moby": "true"
+//    },
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
@@ -39,10 +40,10 @@
         "libssl-dev",
         "llvm",
         "procps",
-        "python-openssl",
         "tk-dev",
         "wget",
         "xz-utils",
+        "yq",
         "zsh"
         // Add other packages as needed
       ]
@@ -54,8 +55,12 @@
   },
   "extensions": [
     "ms-kubernetes-tools.vscode-kubernetes-tools",
-    "ms-azuretools.vscode-docker"
+//    "ms-azuretools.vscode-docker"
   ],
   "forwardPorts": [8080],
-  "postCreateCommand": "echo 'Devcontainer is ready!'"
+  "postCreateCommand": "echo 'Devcontainer is ready!'",
+  "mounts": [
+    "source=${localEnv:HOME}/.docker,target=/home/devuser/.docker,type=bind"
+  ],
+  "remoteUser": "devuser"
 }

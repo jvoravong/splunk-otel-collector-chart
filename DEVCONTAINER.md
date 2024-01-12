@@ -186,3 +186,10 @@ If you're running Docker Desktop, you can adjust the allocated resources in the 
 #### Questions
 How might one make devcontainer repository code changes within a local or remove container and also have these change propagate to the native local repository?
 How might one open and manage a PR using devcontainers?
+
+#### Issues
+Jetbrains supports using devcontainers on on the docker enginer using the docker container runtime only,
+many users may be using the containerd runtime which with jetbrains which does not support devcontainers at this time.
+Coming soon.
+See: https://youtrack.jetbrains.com/issue/IDEA-341406/Devcontainer-with-valid-Dockerfile-cant-retrieve-image-ID-from-build-stream
+-> Might need containerd for the devcontainer build to complete. Might need the devontainer to be prebuilt
