@@ -12,7 +12,7 @@ This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk Op
 
 - `collector`: Fix template function to be able to convert non-integer memory limit values ([#1128](https://github.com/signalfx/splunk-otel-collector-chart/pull/1128))
 
-## [0.92.0] - 2024-01-23
+## [0.92.6] - 2024-01-23
 
 This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v0.92.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.92.0).
 
