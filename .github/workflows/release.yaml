@@ -25,7 +25,7 @@ jobs:
             echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
             echo "New release needed, creating..."
             echo "VALID_UPDATE=1" >> $GITHUB_ENV
-            awk -v ver="[$NEW_VERSION]" 'BEGIN {printit=0} /^## /{printit=0} /^## \[ver\]/{printit=1} printit{print}' CHANGELOG.md > RELEASE.md
+            awk -v ver="[$NEW_VERSION]" 'BEGIN {printit=0} /^## /{printit=0} /^## \[ver\]/{printit=1} printit{print}' CHANGELOG.md > $HOME/RELEASE.md
             cat RELEASE.md
           else
             echo "No new release needed"
