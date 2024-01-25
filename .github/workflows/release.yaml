@@ -45,42 +45,15 @@ jobs:
         run: make render
         if: ${{ steps.check_update_chart.outputs.VALID_UPDATE == 1 }}
 
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.6.0
-        with:
-          charts_dir: helm-charts
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        if: ${{ steps.check_update_chart.outputs.VALID_UPDATE == 1 }}
-
       - name: Generate Release Notes
         run: make chlog-release-notes OUTPUT=file
         if: ${{ steps.check_update_chart.outputs.VALID_UPDATE == 1 }}
 
-      - name: Update Chart Release with Release Notes
-        uses: actions/github-script@v7
-        if: ${{ steps.check_update_chart.outputs.VALID_UPDATE == 1 }}
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.6.0
         with:
-          script: |
-            const fs = require('fs');
-            const releaseNotes = fs.readFileSync('RELEASE.md', 'utf8');
-            const version = '${{ steps.check_update_chart.outputs.VERSION }}';
-            const tagName = 'v' + version; // Assuming tag names are prefixed with 'v'
-            const releases = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            const release = releases.data.find(release => release.tag_name === tagName);
-            if (release) {
-              await github.rest.repos.updateRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                release_id: release.id,
-                body: releaseNotes,
-              });
-              console.log(`Release notes updated for ${tagName}`);
-            } else {
-              console.log(`Release ${tagName} not found. No update made.`);
-            }
+          charts_dir: helm-charts
+          config: .github/workflows/configs/cr.yaml
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        if: ${{ steps.check_update_chart.outputs.VALID_UPDATE == 1 }}

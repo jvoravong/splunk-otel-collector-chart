@@ -120,7 +120,7 @@ chlog-release-notes: ## Prints out the current release notes to stdout or RELEAS
 	VER_PATTERN="\[$${ESCAPED_VER}\]"; \
 	echo "Extracting release notes for version $(VERSION)"; \
 	if [ "$(OUTPUT)" = "file" ]; then \
-		awk "\$$0 ~ /$$VER_PATTERN/{flag=1; next} /^## \[/{flag=0} flag && NF" CHANGELOG.md > RELEASE.md; \
+		awk "\$$0 ~ /$$VER_PATTERN/{flag=1; next} /^## \[/{flag=0} flag && NF" CHANGELOG.md >  helm-charts/splunk-otel-collector/RELEASE.md; \
 		echo "Release notes written to RELEASE.md"; \
 	else \
 		awk "\$$0 ~ /$$VER_PATTERN/{flag=1; next} /^## \[/{flag=0} flag && NF" CHANGELOG.md; \

@@ -4,11 +4,10 @@
 # Helm
 **/charts/*.tgz
 helm-charts/splunk-otel-collector/Chart.lock
+helm-charts/splunk-otel-collector/RELEASE.md
 
 **/__pycache__/*
 bin/
 
 # helm unittests - remove when ready to snapshots for unittest
 **__snapshot__**
-
-RELEASE.md
