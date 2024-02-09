@@ -176,3 +176,10 @@ update-chart-dep: dep-update ## Updates the dependency version in the Chart.yaml
 		exit 1; \
 	fi
 	ci_scripts/update-chart-dependency.sh $(CHART_PATH) $(SUBCHART_NAME) $(DEBUG_MODE)
+
+# Example Uusage:
+#		make prepare-release
+# 	make prepare-release VERSION=1.2.3
+.PHONY: prepare-release
+prepare-release: ## Prepares for a new release of the helm chart. Optionally specify VERSION=x.y.z
+	@./ci_scripts/prepare-release.sh
