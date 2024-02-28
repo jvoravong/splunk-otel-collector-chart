@@ -224,7 +224,7 @@ get_latest_tag() {
         local latest_api="https://api.github.com/repos/${full_repo_name}/tags"
         local tag_name=$(curl -sL -H 'Accept: application/vnd.github+json' "$latest_api" | jq -r '.[0].name')
         if [ -n "$filter" ]; then
-            tag_name=$(curl -sL -H 'Accept: application/vnd.github+json' "$latest_api" | jq -r --arg filter "$filter" 'first(.[] | select(.name | startswith($filter))).name')
+            tag_name=$(curl -sL -H 'Accept: application/vnd.github+json' "$latest_api" | jq -r --arg filter "$filter" '.[0].name')
         fi
         if [ -z "$tag_name" ]; then
             echo "Error: No tag found or failed to fetch tag from ghcr.io" >&2
