@@ -20,33 +20,24 @@ function update_versions() {
 
 # Function to notify Github workflows when to execute downstream release jobs.
 function notify_workflows_for_need_update() {
-    local current_chart_version="$1"
-    local latest_chart_version="$2"
-
     # Emit the NEED_UPDATE variable to either GitHub output or stdout.
     setd "NEED_UPDATE" 1
-    setd "CURRENT_CHART_VERSION" "$current_chart_version"
-    setd "LATEST_CHART_VERSION" "$latest_chart_version"
-    setd "CURRENT_APP_VERSION" "$current_chart_version"
-    setd "LATEST_APP_VERSION" "$latest_chart_version"
+    setd "CHART_VERSION" "$1"
+    setd "APP_VERSION" "$2"
 
     # Notify possible downstream CI/CD tasks about needed info.
     emit_output "NEED_UPDATE"
-    emit_output "CURRENT_CHART_VERSION"
-    emit_output "LATEST_CHART_VERSION"
-    emit_output "CURRENT_APP_VERSION"
-    emit_output "LATEST_APP_VERSION"
+    emit_output "CHART_VERSION"
+    emit_output "APP_VERSION"
 }
 
 # Prepare the release by updating versions, creating a branch, and committing changes.
 function prepare_release() {
-    local version="$1" appVersion="$2" create_branch="$3"
-
-    echo "Preparing release: $version"
-    echo "Release chart version: $version"
-    echo "Release app version: $appVersion"
+    echo "Preparing release: $LATEST_CHART_VERSION"
+    echo "Release chart version: $LATEST_CHART_VERSION"
+    echo "Release app version: $APP_VERSION"
     # Update Chart.yaml with the new versions.
-    update_versions "$version" "$appVersion"
+    update_versions "$LATEST_CHART_VERSION" "$APP_VERSION"
 
     # Generate new configs and update the changelog.
     make render
@@ -61,20 +52,20 @@ function prepare_release() {
     else
         # Notify downstream Github workflow to create a release PR if needed.
         # Create a PR if the there is a major or minor version difference for the chart.
-        notify_workflows_for_need_update "$version" "$appVersion"
-        local BRANCH_NAME="update-branch"
+        notify_workflows_for_need_update "$LATEST_CHART_VERSION" "$APP_VERSION"
+        local BRANCH_NAME="update-release"
         if [[ "$create_branch" == "true" ]]; then
-            BRANCH_NAME="release-$version"
+            BRANCH_NAME="release-update-$LATEST_CHART_VERSION"
             echo "Creating branch: $BRANCH_NAME"
             # Ensure the branch is correctly set up, either by creating or resetting it.
             setup_branch "$BRANCH_NAME" "$OWNER/splunk-otel-collector-chart"
             # Commit and push only if create_branch is true.
-            git commit -m "Prepare release $version"
+            git commit -m "Prepare release $LATEST_CHART_VERSION"
             git push -u origin "$BRANCH_NAME"
         else
             echo "Changes are staged but not committed or pushed because CREATE_BRANCH is not set to true."
             # Optionally, you might still want to commit locally even if not pushing.
-            git commit -m "Prepare release $version"
+            git commit -m "Prepare release $LATEST_CHART_VERSION"
         fi
         # Emit the branch name so down stream jobs can use it
         emit_output "BRANCH_NAME"
@@ -101,6 +92,7 @@ app_major=$(get_major_version "v$APP_VERSION")
 app_minor=$(get_minor_version "v$APP_VERSION")
 
 # Conditional logic to increment chart version or align it based on app version.
+LATEST_CHART_VERSION=CHART_VERSION
 if [[ "$CHART_VERSION_OVERRIDDEN" = true ]]; then
     debug "Using overridden chart version: $CHART_VERSION"
     if helm search repo splunk-otel-collector-chart/splunk-otel-collector --versions | grep -q "splunk-otel-collector-$CHART_VERSION"; then
@@ -109,12 +101,12 @@ if [[ "$CHART_VERSION_OVERRIDDEN" = true ]]; then
     fi
 elif [[ "$chart_major" -eq "$app_major" && "$chart_minor" -eq "$app_minor" ]]; then
     chart_patch=$(get_patch_version "v$CHART_VERSION")
-    CHART_VERSION="$chart_major.$chart_minor.$((chart_patch + 1))"
-    debug "Incrementing chart version to $chart_version"
+    LATEST_CHART_VERSION="$chart_major.$chart_minor.$((chart_patch + 1))"
+    debug "Incrementing chart version to $RELEASE_CHART_VERSION"
 else
-    CHART_VERSION="$app_major.$app_minor.0"
-    debug "Aligning chart version to $chart_version due to major.minor mismatch with app version"
+    LATEST_CHART_VERSION="$app_major.$app_minor.0"
+    debug "Aligning chart version to $LATEST_CHART_VERSION due to major.minor mismatch with app version"
 fi
 
 setup_git
-prepare_release "$CHART_VERSION" "$APP_VERSION" "$CREATE_BRANCH"
+prepare_release "$LATEST_CHART_VERSION" "$APP_VERSION" "$CREATE_BRANCH"
