@@ -106,13 +106,14 @@ if [[ "$CHART_VERSION_OVERRIDDEN" = true ]]; then
 elif [[ "$chart_major" -eq "$app_major" && "$chart_minor" -eq "$app_minor" ]]; then
     chart_patch=$(get_patch_version "v$CHART_VERSION")
     CHART_VERSION="$chart_major.$chart_minor.$((chart_patch + 1))"
-    debug "Incrementing chart version to $chart_version"
+    debug "Incrementing chart version to $CHART_VERSION"
 else
     CHART_VERSION="$app_major.$app_minor.0"
-    debug "Aligning chart version to $chart_version due to major.minor mismatch with app version"
+    debug "Aligning chart version to $CHART_VERSION due to major.minor mismatch with app version"
     # Notify downstream Github workflow to create a release PR if needed.
     # Create a PR if the there is a major or minor version difference for the chart.
     notify_workflows_for_need_update "$CHART_VERSION" "$APP_VERSION"
 fi
 
+setup_git
 prepare_release "$CHART_VERSION" "$APP_VERSION" "$CREATE_BRANCH"
