@@ -62,9 +62,9 @@ function prepare_release() {
         # Notify downstream Github workflow to create a release PR if needed.
         # Create a PR if the there is a major or minor version difference for the chart.
         notify_workflows_for_need_update "$version" "$appVersion"
-        local BRANCH_NAME="update-branch"
+        local BRANCH_NAME="update-release"
         if [[ "$create_branch" == "true" ]]; then
-            BRANCH_NAME="release-$version"
+            BRANCH_NAME="release-update-$version"
             echo "Creating branch: $BRANCH_NAME"
             # Ensure the branch is correctly set up, either by creating or resetting it.
             setup_branch "$BRANCH_NAME" "$OWNER/splunk-otel-collector-chart"
