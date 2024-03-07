@@ -59,6 +59,9 @@ function prepare_release() {
     if git diff --staged --quiet; then
         echo "No changes to commit."
     else
+        # Notify downstream Github workflow to create a release PR if needed.
+        # Create a PR if the there is a major or minor version difference for the chart.
+        notify_workflows_for_need_update "$version" "$appVersion"
         if [[ "$create_branch" == "true" ]]; then
             local branch_name="release-$version"
             echo "Creating branch: $branch_name"
@@ -94,15 +97,13 @@ chart_minor=$(get_minor_version "v$CHART_VERSION")
 app_major=$(get_major_version "v$APP_VERSION")
 app_minor=$(get_minor_version "v$APP_VERSION")
 
-# Notify downstream Github workflow to create a release PR if needed.
-# Create a PR if the job was manually created by a human.
-if [[ "$WORKFLOW_TRIGGER_TYPE" = "dispatch" ]]; then
-    notify_workflows_for_need_update "$CHART_VERSION" "$APP_VERSION"
-fi
-
 # Conditional logic to increment chart version or align it based on app version.
 if [[ "$CHART_VERSION_OVERRIDDEN" = true ]]; then
     debug "Using overridden chart version: $CHART_VERSION"
+    if helm search repo splunk-otel-collector-chart/splunk-otel-collector --versions | grep -q "splunk-otel-collector-$CHART_VERSION"; then
+        echo "Version $CHART_VERSION already exists. Exiting."
+        exit 1
+    fi
 elif [[ "$chart_major" -eq "$app_major" && "$chart_minor" -eq "$app_minor" ]]; then
     chart_patch=$(get_patch_version "v$CHART_VERSION")
     CHART_VERSION="$chart_major.$chart_minor.$((chart_patch + 1))"
@@ -110,9 +111,7 @@ elif [[ "$chart_major" -eq "$app_major" && "$chart_minor" -eq "$app_minor" ]]; t
 else
     CHART_VERSION="$app_major.$app_minor.0"
     debug "Aligning chart version to $chart_version due to major.minor mismatch with app version"
-    # Notify downstream Github workflow to create a release PR if needed.
-    # Create a PR if the there is a major or minor version difference for the chart.
-    notify_workflows_for_need_update "$CHART_VERSION" "$APP_VERSION"
 fi
 
+setup_git
 prepare_release "$CHART_VERSION" "$APP_VERSION" "$CREATE_BRANCH"
