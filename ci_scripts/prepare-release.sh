@@ -50,7 +50,8 @@ function prepare_release() {
 
     # Generate new configs and update the changelog.
     make render
-    make chlog-update
+    # Generate any CHANELOG.md content if it exists
+    make chlog-update || true
 
     # Stage any changes.
     git add .
@@ -60,7 +61,7 @@ function prepare_release() {
         echo "No changes to commit."
     else
         if [[ "$create_branch" == "true" ]]; then
-            local branch_name="release-$version"
+            local branch_name="release-branch"
             echo "Creating branch: $branch_name"
             # Ensure the branch is correctly set up, either by creating or resetting it.
             setup_branch "$branch_name" "jvoravong/splunk-otel-collector-chart"
