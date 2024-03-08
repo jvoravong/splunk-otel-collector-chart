@@ -1,4 +1,4 @@
-name: Prepare New Helm Chart Release
+name: Check for new chart release
 
 # Description:
 # This workflow prepares a new release of the helm chart by updating chart and app versions as well as creating a PR.
@@ -8,8 +8,8 @@ name: Prepare New Helm Chart Release
 
 on:
   schedule:
-    # Run every Monday and Thursday
-    - cron: "45 12 * * 1,4"
+    # Run every 12th hour at minute 40 past.
+    - cron: "40 */12 * * *"
   workflow_dispatch:
     inputs:
       CHART_VERSION:
@@ -38,20 +38,6 @@ jobs:
       - name: Install tools
         run: make install-tools
 
-      - name: Update Version
-        id: update
-        run: |
-          LATEST_VER=$(curl -L -qs -H 'Accept: application/vnd.github+json' https://api.github.com/repos/signalfx/splunk-otel-collector/releases/latest | jq -r .tag_name)
-          sed -i "s/appVersion:.*/appVersion: ${LATEST_VER##v}/" helm-charts/splunk-otel-collector/Chart.yaml
-          make render
-          echo "Latest version: ${LATEST_VER}"
-          echo "LATEST_VER=${LATEST_VER}" >> "$GITHUB_OUTPUT"
-          if [[ -n $(git status --short) ]];then
-            echo "NEED_UPDATE=1" >> "$GITHUB_OUTPUT"
-          else
-            echo "NEED_UPDATE=0" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Prepare Release
         id: prepare_release
         run: |
@@ -60,10 +46,14 @@ jobs:
       - name: Check if PR is already open
         id: check_if_pr_open
         run: |
-          DIFF=1
+          echo "PR_NEEDED=1" >> "$GITHUB_OUTPUT"
           git fetch origin
-          ((git show-ref --verify --quiet refs/heads/${{ steps.prepare_release.outputs.BRANCH_NAME }}) || (git diff --no-ext-diff --quiet main..${{ steps.prepare_release.outputs.BRANCH_NAME }} -- helm-charts)) && DIFF=0
-          echo "PR_NEEDED=$DIFF" >> "$GITHUB_OUTPUT"
+          # Directly check if the feature branch exists and has the same changes in the remote repository
+          if git ls-remote --heads origin update-release > /dev/null; then
+            if git diff --no-ext-diff --quiet origin/update-release -- helm-charts; then
+              echo "PR_NEEDED=0" >> "$GITHUB_OUTPUT"
+            fi
+          fi
 
       - name: Open PR for Version Update
         id: open_pr
@@ -75,7 +65,7 @@ jobs:
           body: |
             Description
             - Release Helm chart version ${{ steps.prepare_release.outputs.LATEST_CHART_VERSION }}
-            - Includes collector version ${{ steps.prepare_release.outputs.APP_VERSION }}
-          branch: ${{ steps.prepare_release.outputs.BRANCH_NAME }} # Same branch name for all PRs
+            - Includes collector version ${{ steps.prepare_release.outputs.LATEST_APP_VERSION }}
+          branch: update-release
           base: main
           delete-branch: true
