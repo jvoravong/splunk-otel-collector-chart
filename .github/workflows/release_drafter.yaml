@@ -4,7 +4,7 @@ name: Check for new chart release
 # This workflow prepares a new release of the helm chart by updating chart and app versions as well as creating a PR.
 # A release PR will be created in these cases.
 #  - When a user kicks offs this workflow manually. A user can specify the CHART_VERSION and APP_VERSION used for the new release.
-#  - When the cron schedule kicks off the job and there is a major or minor version different for the APP_VERSION. The CHART_VERSION will be automatically incremented appropriately.
+#  - When the cron schedule kicks off the job and there is a version difference for the collector application, then a chart release draft PR will be created with the version automatically incremented appropriately.
 
 on:
   schedule:
