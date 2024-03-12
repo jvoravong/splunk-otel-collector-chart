@@ -55,8 +55,6 @@ CURRENT_APP_VERSION=$(yq e ".appVersion" "${CHART_FILE_PATH}")
 CREATE_BRANCH=${CREATE_BRANCH:-true}
 chart_major=$(get_major_version "v$CURRENT_CHART_VERSION")
 chart_minor=$(get_minor_version "v$CURRENT_CHART_VERSION")
-app_major=$(get_major_version "v$CURRENT_APP_VERSION")
-app_minor=$(get_minor_version "v$CURRENT_APP_VERSION")
 
 # This is the version to use with the new release.
 LATEST_APP_VERSION=$(curl -L -qs -H 'Accept: application/vnd.github+json' https://api.github.com/repos/"$OWNER"/splunk-otel-collector/releases/latest | jq -r .tag_name | sed 's/^v//')
@@ -64,6 +62,8 @@ if [[ "$APP_VERSION_OVERRIDDEN" = true ]]; then
     LATEST_APP_VERSION=$APP_VERSION
     debug "Using override collector app version value $LATEST_APP_VERSION"
 fi
+app_major=$(get_major_version "v$LATEST_APP_VERSION")
+app_minor=$(get_minor_version "v$LATEST_APP_VERSION")
 
 # This will be the new version of the chart for the new release
 LATEST_CHART_VERSION=$CURRENT_CHART_VERSION
