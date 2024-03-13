@@ -98,7 +98,7 @@ install_helm_plugin() {
 }
 
 # install brew-based tools
-for tool in kubectl helm chart-testing pre-commit go; do
+for tool in kubectl helm chart-testing pre-commit go skopeo; do
   install "$tool" brew
 done
 
