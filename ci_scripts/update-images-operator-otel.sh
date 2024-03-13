@@ -121,7 +121,7 @@ awk '
 # Replace the original values.yaml with the updated version
 mv "${VALUES_FILE_PATH}.updated" "$VALUES_FILE_PATH"
 # Cleanup temporary files
-rm "$TEMP_MAIN_FILE" "$TEMP_IMAGE_REPOS" "$TEMP_VERSIONS" "$TEMP_VALUES_FILE"
+rm "$TEMP_MAIN_FILE" "$TEMP_VERSIONS" "$TEMP_VALUES_FILE"
 
 echo "Image update process completed successfully!"
 exit 0
