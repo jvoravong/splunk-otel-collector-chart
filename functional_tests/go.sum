@@ -1107,12 +1107,12 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceat
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.98.0/go.mod h1:9hTznk6RjG/mvtmTdSeXSVivcsLBKw6WfPJRJX2Wzn0=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.98.0 h1:6uBxGiwJPCmqhEKKdFbA0ECjM7vaQA+vBO/KQg30ed8=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.98.0/go.mod h1:8IUWugptZJY7den7B0MQk5K8k1SaSaY+kHfBTvBO3SQ=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.98.0 h1:Y4UbYtpt+AsCVj4W8HKxLSlKNrMLhxypmA34GkwjJGE=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.98.0/go.mod h1:a1eqRzzePACd9YamtiY0+42P4dn1pB0Ozc0B3P6JGMs=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.99.0 h1:UasccXIsMcNGsGuyft5N7C1vvzRmQCYHWVXF7YBcY/I=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.99.0/go.mod h1:v9snZu986K9CFjBYeYMwYs2hyqfTiOgLZDw5qphiObI=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.98.0 h1:lZGvpoHCYoEFBDLhnKGGAgGJyX2l2jGZUgC1kTz/esI=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.98.0/go.mod h1:fOHCXaWnVcKJPY9Jxeoyl7tSuuhZ/PPN92ib8eyjSLQ=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.98.0 h1:F1Vnzkhg0Trncmvw65Mq1wBKPgX2wI3aGE90J7CXhuU=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.98.0/go.mod h1:yybbWtN2RnnIoqw3KzboFjk4iYpEBXPzHQvARs+eO9U=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.99.0 h1:773dRpLIpySHFwejaGl8cPbyf1Q2jwhMOgJjDPSqQj0=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.99.0/go.mod h1:PXpmpyK6VWoq1zb5ltUZxqSEpuBpFsY5WmlInpNiDUI=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.98.0 h1:lx4aKpYWxDc8lFoLv93r4MjalQujua/2E95cZTQRUvc=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.98.0/go.mod h1:RVV7i6YZ4j9Jb0J77znceLRgY2VJQxtdp+Mg9CX6fdg=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.98.0 h1:UL3HMit0Rar/I8VBl/jlTEkRVCYQMoYFz3g8R5MUogE=
