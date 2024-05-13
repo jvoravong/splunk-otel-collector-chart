@@ -4,19 +4,18 @@
 module github.com/signalfx/splunk-otel-collector-chart/functional_tests
 
 go 1.21
-
-toolchain go1.21.5
+toolchain go1.22.2
 
 require (
 	github.com/docker/docker v25.0.5+incompatible
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.98.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.0
 	go.opentelemetry.io/collector/consumer v0.99.0
-	go.opentelemetry.io/collector/pdata v1.6.0
+	go.opentelemetry.io/collector/pdata v1.7.0
 	go.opentelemetry.io/collector/receiver v0.99.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.99.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -116,7 +115,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.98.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.98.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.98.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc6 // indirect
@@ -181,7 +180,7 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
 	google.golang.org/grpc v1.63.2 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	google.golang.org/protobuf v1.34.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiextensions-apiserver v0.29.0 // indirect
