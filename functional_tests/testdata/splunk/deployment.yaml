@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: splunk-config
+  name: splunk
   namespace: default
 data:
   default.yml: |
@@ -70,7 +70,7 @@ spec:
         runAsGroup: 0
       containers:
         - name: splunk
-          image: docker.io/splunk/splunk:8.2.0
+          image: quay.io/splunko11ytest/splunk:8.2.0
           ports:
             - name: web-interface
               containerPort: 8000
