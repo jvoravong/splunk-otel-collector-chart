@@ -61,9 +61,9 @@ jobs:
       - name: Run functional tests
         run: |
           cd functional_tests
-          go test -v || { \
+          SKIP_TEARDOWN=true go test -v || { \
             echo "Running splunk_kubernetes_debug_info.sh script to collect debug information."; \
-            ./tools/splunk_kubernetes_debug_info.sh; \
+            NAMESPACES=default ../tools/splunk_kubernetes_debug_info.sh; \
             exit 1; \
           }
       - name: Upload Test Failure Info Artifact
@@ -72,13 +72,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: splunk_kubernetes_debug_info_${{ matrix.k8s-version }}
-          path: ${{ github.workspace }}/*.zip
+          path: ${{ github.workspace }}/functional_tests/*.zip
           retention-days: 3
           overwrite: true
-      - name: Output Test Failure Info Artifact URL
-        if: ${{ failure() }}
-        run: echo 'Artifact URL is ${{ steps.failure-info-artifact.outputs.artifact-url }}'
-
   eks-test:
     name: Test helm install in EKS - credentials needed
     needs: kind-kubernetes-test

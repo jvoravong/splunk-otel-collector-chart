@@ -7,9 +7,9 @@
 # This helps in diagnosing and troubleshooting cluster configurations.
 # Finally, it compresses all the collected files into a ZIP archive.
 #
-# Sensitive Data Handling:
-# The script attempts to redact sensitive information where possible, including tokens, passwords, and certificates.
-# However, users should review the files for any sensitive data before sharing.
+# Input Parameters:
+# - NAMESPACES: Comma-separated list of namespaces to collect data from. If not specified, the script collects data from all namespaces.
+# - K8S_OBJECT_NAME_FILTER: Filter for Kubernetes object names (default: 'splunk|collector|otel|certmanager|test|sck|sock').
 #
 # Usage:
 # 1. Ensure you have `kubectl`, `yq`, and `helm` installed and configured to access your Kubernetes cluster.
@@ -17,32 +17,20 @@
 # 3. Make the script executable:
 #    chmod +x splunk_kubernetes_debug_info.sh
 # 4. Run the script:
-#    ./splunk_kubernetes_debug_info.sh [namespace1 namespace2 ...]
+#    ./splunk_kubernetes_debug_info.sh [NAMESPACES=namespace1,namespace2,...] [K8S_OBJECT_NAME_FILTER=splunk|collector|otel|certmanager|test|sck|sock|customname]
 #    If no namespaces are specified, the script will collect information from all namespaces.
 #
-# Default Behavior:
-# The script defaults to scraping all namespaces because networking configurations can be stored in several namespaces.
-# Supply a subset of namespaces if desired, but ensure to include namespaces that can contain networking or security configurations affecting the collector.
-# Control plane namespaces should be included in target namespace list.
+# Sensitive Data Handling:
+# The script attempts to redact sensitive information where possible, including tokens, passwords, and certificates.
+# However, users should review the files for any sensitive data before sharing.
 #
 # Objects Scraped:
-# - NetworkPolicies
-# - Services
-# - Ingress resources
-# - Endpoints
-# - ConfigMaps
-# - Deployments containing "splunk", "collector", or "otel" in their names
-# - Roles
-# - RoleBindings
-# - Security contexts
-# - Secrets containing "splunk", "collector", or "otel" in their names
+# - Pod logs for agent, cluster-receiver, certmanager, operator, gateway, splunk pods
+# - Deployments, daemonsets, secrets, Helm releases matching K8S_OBJECT_NAME_FILTER
+# - NetworkPolicies, Services, Ingress resources, Endpoints, Roles, RoleBindings, Security contexts
 # - OpenTelemetry Instrumentation objects
-# - Pod logs (agent, cluster-receiver, certmanager, operator, gateway, splunk pods)
-# - Helm values for releases containing "splunk", "otel", or "collector"
-# - Custom Resource Definitions (CRDs)
-# - Pod Security Policies (PSPs)
-# - Security Context Constraints (SCCs)
-# - Cert-manager related objects (if installed)
+# - Custom Resource Definitions (CRDs), Pod Security Policies (PSPs), Security Context Constraints (SCCs)
+# - Cert-manager related objects
 # - MutatingWebhookConfiguration objects
 
 # Helper function to write output to a file
@@ -53,7 +41,7 @@ write_output() {
 
   # Check if output is empty, starts with "No resources found", or "error: the server"
   if [[ -z "$output" || "$output" == "No resources found"* || "$output" == "error: the server"* ]]; then
-    echo "[$(date)] Skipping $file_name: $output" >> "$temp_dir/errors.log"
+    echo "[$(date)] Skipping $file_name: $output" >> "$temp_dir/errors.txt"
     return
   fi
 
@@ -93,24 +81,17 @@ write_output() {
   echo "$output" >> "$file_name"
 }
 
-# Create a temporary directory with a unique name
-temp_dir=$(mktemp -d -t splunk_kubernetes_debug_info_XXXXXX)
-if [[ ! -d "$temp_dir" ]]; then
-  echo "Failed to create temporary directory"
-  exit 1
-fi
-
 # Function to collect data for a given namespace
-collect_data() {
+collect_data_namespace() {
    local ns=$1
    echo "Collecting data for namespace: $ns with filter: $k8s_object_name_filter"
 
-   object_types=("deployments" "daemonsets" "secrets" "networkpolicies" "svc" "ingress" "endpoints" "configmaps" "roles" "rolebindings" "otelinst")
+   object_types=("deployments" "daemonsets" "configmaps" "secrets" "networkpolicies" "svc" "ingress" "endpoints" "roles" "rolebindings" "otelinst")
 
    for type in "${object_types[@]}"; do
-     if [[ "$type" == "secrets" ]]; then
+     if [[ "$type" == "deployment" ||  "$type" == "daemonset" || "$type" == "configmaps" || "$type" == "secrets" ]]; then
        kubectl get $type -n $ns -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep -E "$k8s_object_name_filter" | while read object; do
-         cmd="kubectl describe $type $object -n $ns"
+         cmd="kubectl get $type $object -n $ns -o yaml"
          output=$(eval "$cmd")
          write_output "$output" "$temp_dir/namespace_${ns}_${type}_${object}.yaml" "$cmd"
        done
@@ -125,15 +106,6 @@ collect_data() {
 
   # Collect logs from specific pods
   pods=$(kubectl get pods -n $ns -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep -E "$k8s_object_name_filter")
-
-  # Collect logs from a single agent pod
-  agent_pod=$(echo "$pods" | grep "agent" | head -n 1)
-  if [ -n "$agent_pod" ]; then
-    cmd="kubectl logs $agent_pod -n $ns"
-    output=$(eval "$cmd")
-    write_output "$output" "$temp_dir/namespace_${ns}_logs_pod_${agent_pod}.log" "$cmd"
-    pods=$(echo "$pods" | grep -v "$agent_pod")
-  fi
 
   # Collect logs from a single agent pod
   agent_pod=$(echo "$pods" | grep "agent" | head -n 1)
@@ -171,15 +143,6 @@ collect_data() {
   done
   pods=$(echo "$pods" | grep -v "operator")
 
-  # Collect logs from one of the gateway pods
-  # TODO: Add in gateway log scraping when we have a better way to identify gateway pods
-  # gateway_pod=$(echo "$pods" | grep -vE 'agent|k8s-cluster|operator|certmanager' | head -n 1)
-  # if [ -n "$gateway_pod" ]; then
-  #   cmd="kubectl logs $gateway_pod -n $ns"
-  #   output=$(eval "$cmd")
-  #   write_output "$output" "$temp_dir/namespace_${ns}_logs_pod_${gateway_pod}.log" "$cmd"
-  # fi
-
   # Collect logs from a single Splunk pod
   splunk_pod=$(kubectl get pods -n "$ns" -l app=splunk -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
   if [ -n "$splunk_pod" ]; then
@@ -214,91 +177,116 @@ collect_data() {
   done
 }
 
-# Collect Helm values for releases containing splunk, otel, or collector in their names
-collect_helm_values() {
+# Function to collect cluster-wide data
+collect_data_cluster() {
+  echo "Collecting cluster-wide data..."
+
+  echo "Basic Cluster Configurations:" >> "$output_file"
+  echo "Cluster Name: $(kubectl config view --minify -o jsonpath='{.clusters[].name}')" >> "$output_file"
+  echo "Kubernetes Version:" >> "$output_file"
+  kubectl version >> "$output_file"
+  echo "Number of Namespaces:" >> "$output_file"
+  kubectl get namespaces | wc -l >> "$output_file"
+  echo "Namespaces: $(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}')" >> "$output_file"
+  echo "Number of Running Nodes:" >> "$output_file"
+  kubectl get nodes | wc -l >> "$output_file"
+  echo "Number of Running Pods:" >> "$output_file"
+  kubectl get pods --all-namespaces --field-selector=status.phase=Running | wc -l >> "$output_file"
+  echo "Splunk Related Pods:" >> "$output_file"
+  kubectl get pods --all-namespaces | (head -n 1 && grep -E "$k8s_object_name_filter") >> "$output_file"
+  echo "---" >> "$output_file"
+
+  echo "Collecting custom resource definitions..."
+  cmd="kubectl get crds -o yaml"
+  output=$(eval "$cmd")
+  write_output "$output" "$temp_dir/cluster_custom_resource_definitions.yaml" "$cmd"
+
+  echo "Collecting pod security policies..."
+  cmd="kubectl get psp -o yaml"
+  output=$(eval "$cmd")
+  write_output "$output" "$temp_dir/cluster_pod_security_policies.yaml" "$cmd"
+
+  echo "Collecting security context constraints..."
+  cmd="kubectl get scc -o yaml"
+  output=$(eval "$cmd")
+  write_output "$output" "$temp_dir/cluster_security_context_constraints.yaml" "$cmd"
+
+  echo "Collecting MutatingWebhookConfiguration objects..."
+  cmd="kubectl get mutatingwebhookconfiguration.admissionregistration.k8s.io -o yaml; kubectl describe mutatingwebhookconfiguration.admissionregistration.k8s.io; kubectl get --raw /metrics | grep apiserver_admission_webhook_rejection_count;"
+  output=$(eval "$cmd")
+  write_output "$output" "$temp_dir/cluster_webhooks.yaml" "$cmd"
+
+  echo "Checking for cert-manager installation..."
+  cert_manager_pods=$(kubectl get pods --all-namespaces -l app=cert-manager --no-headers)
+  if [ -n "$cert_manager_pods" ]; then
+    echo "Cert-manager is installed. Collecting related objects..."
+    cmd="kubectl get Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges --all-namespaces -o yaml; kubectl describe Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges --all-namespaces"
+    output=$(eval "$cmd")
+    write_output "$output" "$temp_dir/cluster_cert_manager_objects.yaml" "$cmd"
+  fi
+
   echo "Collecting Helm values for relevant releases..."
-  helm list -A | grep -E 'splunk|otel|collector' | awk '{print $1, $2}' | while read release namespace; do
+  helm list -A | grep -E "$k8s_object_name_filter" | awk '{print $1, $2}' | while read release namespace; do
     cmd="helm get values $release -n $namespace"
     output=$(eval "$cmd")
     write_output "$output" "$temp_dir/helm_values_${release}_${namespace}.yaml" "$cmd"
   done
 }
 
+# Parse input parameters
+namespaces=""
+k8s_object_name_filter="*|splunk|collector|otel|certmanager|test|sck|sock"
+
+for arg in "$@"; do
+  case $arg in
+    NAMESPACES=*)
+      namespaces="${arg#*=}"
+      ;;
+    K8S_OBJECT_NAME_FILTER=*)
+      k8s_object_name_filter="${arg#*=}"
+      ;;
+    *)
+      echo "Unknown parameter: $arg"
+      exit 1
+      ;;
+  esac
+done
+
 # Collect data from all namespaces if no namespaces are specified
-if [ "$#" -eq 0 ]; then
+if [[ -z "$namespaces" ]]; then
   namespaces=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}')
 else
-  namespaces="$@"
+  IFS=',' read -r -a namespaces <<< "$namespaces"
 fi
 
-k8s_object_name_filter=${k8s_object_name_filter:-'splunk|collector|otel|certmanager|test|sck|sock'}
+echo "Namespaces: ${namespaces[@]}"
+echo "Kubernetes object name filter: $k8s_object_name_filter"
+
+# Create a temporary directory with a unique name
+temp_dir=$(mktemp -d -t splunk_kubernetes_debug_info_XXXXXX)
+if [[ ! -d "$temp_dir" ]]; then
+  echo "Failed to create temporary directory"
+  exit 1
+fi
 
 # Output file for basic cluster information
-output_file="$temp_dir/_cluster_info.txt"
+output_file="$temp_dir/cluster.txt"
 
 # Print script start time
 script_start_time=$(date +"%Y-%m-%d %H:%M:%S")
 echo "Script start time: $script_start_time"
 echo "Script start time: $script_start_time" >> "$output_file"
 
-echo "Collecting debugging information from Kubernetes cluster..."
+# Collect cluster-wide data
+collect_data_cluster
 
-# Collect basic cluster information
-echo "Basic Cluster Configurations:" >> "$output_file"
-echo "Cluster Name: $(kubectl config view --minify -o jsonpath='{.clusters[].name}')" >> "$output_file"
-echo "Kubernetes Version:" >> "$output_file"
-kubectl version >> "$output_file"
-echo "Number of Namespaces:"
-kubectl get namespaces | wc -l >> "$output_file"
-echo "Namespaces: $(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}')" >> "$output_file"
-echo "Number of Running Nodes:" >> "$output_file"
-kubectl get nodes | wc -l >> "$output_file"
-echo "Number of Running Pods:" >> "$output_file"
-kubectl get pods --all-namespaces --field-selector=status.phase=Running | wc -l >> "$output_file"
-echo "Splunk Related Pods:" >> "$output_file"
-kubectl get pods --all-namespaces | (head -n 1 && grep -E "$k8s_object_name_filter") >> "$output_file"
-echo "---" >> "$output_file"
-
-# Custom Resource Definitions (CRDs) extend Kubernetes' API with new resource types.
-echo "Collecting custom resource definitions..."
-cmd="kubectl get crds -o yaml"
-output=$(eval "$cmd")
-write_output "$output" "$temp_dir/cluster_custom_resource_definitions.yaml" "$cmd"
-
-# Pod Security Policies (PSPs) control security settings for pods.
-echo "Collecting pod security policies..."
-cmd="kubectl get psp -o yaml"
-output=$(eval "$cmd")
-write_output "$output" "$temp_dir/cluster_pod_security_policies.yaml" "$cmd"
-
-# Security Context Constraints (SCCs) are OpenShift-specific resources that define security requirements for pods.
-echo "Collecting security context constraints..."
-cmd="kubectl get scc -o yaml"
-output=$(eval "$cmd")
-write_output "$output" "$temp_dir/cluster_security_context_constraints.yaml" "$cmd"
-
-# Collect Webhook objects
-echo "Collecting MutatingWebhookConfiguration objects..."
-cmd="kubectl get mutatingwebhookconfiguration.admissionregistration.k8s.io -o yaml; kubectl describe mutatingwebhookconfiguration.admissionregistration.k8s.io; kubectl get --raw /metrics | grep apiserver_admission_webhook_rejection_count;"
-output=$(eval "$cmd")
-write_output "$output" "$temp_dir/cluster_webhooks.yaml" "$cmd"
-
-# Check if cert-manager is installed and collect related objects if it is
-cert_manager_pods=$(kubectl get pods --all-namespaces -l app=cert-manager --no-headers)
-if [ -n "$cert_manager_pods" ]; then
-  echo "Cert-manager is installed. Collecting related objects..."
-  cmd="kubectl get Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges --all-namespaces -o yaml; kubectl describe Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges --all-namespaces"
-  output=$(eval "$cmd")
-  write_output "$output" "$temp_dir/cluster_cert_manager_objects.yaml" "$cmd"
-fi
-
-# Function to manage parallel processing
-process_namespaces_in_parallel() {
+# Function to manage parallel processing of namespaces
+collect_data_namespace_namespaces() {
   local parallelism=20
   local pids=()
 
-  for ns in $namespaces; do
-    collect_data $ns & pids+=($!)
+  for ns in "${namespaces[@]}"; do
+    collect_data_namespace $ns & pids+=($!)
 
     if [[ ${#pids[@]} -ge $parallelism ]]; then
       for pid in "${pids[@]}"; do
@@ -315,15 +303,12 @@ process_namespaces_in_parallel() {
 }
 
 # Process namespaces in parallel
-process_namespaces_in_parallel
-
-# Collect Helm values
-collect_helm_values
+collect_data_namespace_namespaces
 
 # Print script end time and duration
 script_end_time=$(date +"%Y-%m-%d %H:%M:%S")
-script_start_timestamp=$(date -j -f "%Y-%m-%d %H:%M:%S" "$script_start_time" +%s)
-script_end_timestamp=$(date -j -f "%Y-%m-%d %H:%M:%S" "$script_end_time" +%s)
+script_start_timestamp=$(date -d "$script_start_time" +%s)
+script_end_timestamp=$(date -d "$script_end_time" +%s)
 script_duration=$((script_end_timestamp - script_start_timestamp))
 script_duration_human=$(printf '%02d:%02d:%02d' $((script_duration/3600)) $((script_duration%3600/60)) $((script_duration%60)))
 
