@@ -4,6 +4,14 @@
 <!-- For unreleased changes, see entries in .chloggen -->
 <!-- next version -->
 
+## [0.106.0] - 2024-08-09
+
+This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v0.106.1](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.106.1).
+
+### 🛑 Breaking changes 🛑
+
+- `agent`: Remove the deprecated OTLP HTTP port 55681 ([#1359](https://github.com/signalfx/splunk-otel-collector-chart/pull/1359))
+
 ## [0.105.0] - 2024-07-30
 
 This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v0.105.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.105.0).
