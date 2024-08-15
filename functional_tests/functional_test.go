@@ -467,6 +467,7 @@ func testNodeJSTraces(t *testing.T) {
 		ptracetest.IgnoreSpanAttributeValue("net.peer.port"),
 		ptracetest.IgnoreSpanAttributeValue("http.user_agent"),
 		ptracetest.IgnoreSpanAttributeValue("os.version"),
+		ptracetest.IgnoreSpanAttributeValue("network.peer.port"),
 		ptracetest.IgnoreTraceID(),
 		ptracetest.IgnoreSpanID(),
 		ptracetest.IgnoreStartTimestamp(),
