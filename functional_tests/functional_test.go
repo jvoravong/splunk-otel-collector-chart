@@ -526,6 +526,7 @@ func testJavaTraces(t *testing.T) {
 		ptracetest.IgnoreResourceAttributeValue("splunk.distro.version"),
 		ptracetest.IgnoreResourceAttributeValue("splunk.zc.method"),
 		ptracetest.IgnoreResourceAttributeValue("service.instance.id"),
+		ptracetest.IgnoreSpanAttributeValue("network.peer.port"),
 		ptracetest.IgnoreSpanAttributeValue("net.sock.peer.port"),
 		ptracetest.IgnoreSpanAttributeValue("thread.id"),
 		ptracetest.IgnoreSpanAttributeValue("thread.name"),
