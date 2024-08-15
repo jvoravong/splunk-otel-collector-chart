@@ -128,7 +128,7 @@ resourceSpans:
           version: 1.32.1-alpha
         spans:
           - attributes:
-              - key: http.target
+              - key: url.path
                 value:
                   stringValue: /
               - key: net.sock.peer.addr
@@ -158,19 +158,16 @@ resourceSpans:
               - key: net.sock.peer.port
                 value:
                   stringValue: '*'
-              - key: net.sock.host.addr
-                value:
-                  stringValue: 127.0.0.1
               - key: net.protocol.version
                 value:
                   stringValue: "1.1"
-              - key: http.scheme
+              - key: url.scheme
                 value:
                   stringValue: http
-              - key: net.host.port
+              - key: http.response.status_code
                 value:
-                  intValue: "8080"
-              - key: http.method
+                  intValue: "200"
+              - key: http.request.method
                 value:
                   stringValue: GET
               - key: net.protocol.name
@@ -179,7 +176,7 @@ resourceSpans:
               - key: webengine.name
                 value:
                   stringValue: tomcat
-              - key: http.status_code
+              - key: http.response.status_code
                 value:
                   intValue: "200"
             kind: 2
@@ -189,13 +186,13 @@ resourceSpans:
             status: {}
             traceId: ""
           - attributes:
-              - key: http.target
+              - key: url.path
                 value:
                   stringValue: /
               - key: net.sock.peer.addr
                 value:
                   stringValue: 127.0.0.1
-              - key: net.host.name
+              - key: server.address
                 value:
                   stringValue: localhost
               - key: user_agent.original
@@ -225,13 +222,13 @@ resourceSpans:
               - key: net.protocol.version
                 value:
                   stringValue: "1.1"
-              - key: http.scheme
+              - key: url.scheme
                 value:
                   stringValue: http
-              - key: net.host.port
+              - key: server.port
                 value:
                   intValue: "8080"
-              - key: http.method
+              - key: http.request.method
                 value:
                   stringValue: GET
               - key: net.protocol.name
@@ -240,7 +237,7 @@ resourceSpans:
               - key: webengine.name
                 value:
                   stringValue: tomcat
-              - key: http.status_code
+              - key: http.response.status_code
                 value:
                   intValue: "200"
             kind: 2
@@ -250,10 +247,10 @@ resourceSpans:
             status: {}
             traceId: ""
           - attributes:
-              - key: http.target
+              - key: url.path
                 value:
                   stringValue: /
-              - key: net.sock.peer.addr
+              - key: network.peer.address
                 value:
                   stringValue: 127.0.0.1
               - key: net.host.name
@@ -286,13 +283,13 @@ resourceSpans:
               - key: net.protocol.version
                 value:
                   stringValue: "1.1"
-              - key: http.scheme
+              - key: url.scheme
                 value:
                   stringValue: http
               - key: net.host.port
                 value:
                   intValue: "8080"
-              - key: http.method
+              - key: http.request.method
                 value:
                   stringValue: GET
               - key: net.protocol.name
@@ -301,7 +298,7 @@ resourceSpans:
               - key: webengine.name
                 value:
                   stringValue: tomcat
-              - key: http.status_code
+              - key: http.response.status_code
                 value:
                   intValue: "200"
             kind: 2
@@ -311,7 +308,7 @@ resourceSpans:
             status: {}
             traceId: ""
           - attributes:
-              - key: http.target
+              - key: url.path
                 value:
                   stringValue: /
               - key: net.sock.peer.addr
@@ -347,13 +344,13 @@ resourceSpans:
               - key: net.protocol.version
                 value:
                   stringValue: "1.1"
-              - key: http.scheme
+              - key: url.scheme
                 value:
                   stringValue: http
               - key: net.host.port
                 value:
                   intValue: "8080"
-              - key: http.method
+              - key: http.request.method
                 value:
                   stringValue: GET
               - key: net.protocol.name
@@ -362,7 +359,7 @@ resourceSpans:
               - key: webengine.name
                 value:
                   stringValue: tomcat
-              - key: http.status_code
+              - key: http.response.status_code
                 value:
                   intValue: "200"
             kind: 2
@@ -372,7 +369,7 @@ resourceSpans:
             status: {}
             traceId: ""
           - attributes:
-              - key: http.target
+              - key: url.path
                 value:
                   stringValue: /
               - key: net.sock.peer.addr
@@ -408,13 +405,13 @@ resourceSpans:
               - key: net.protocol.version
                 value:
                   stringValue: "1.1"
-              - key: http.scheme
+              - key: url.scheme
                 value:
                   stringValue: http
               - key: net.host.port
                 value:
                   intValue: "8080"
-              - key: http.method
+              - key: http.request.method
                 value:
                   stringValue: GET
               - key: net.protocol.name
@@ -423,7 +420,7 @@ resourceSpans:
               - key: webengine.name
                 value:
                   stringValue: tomcat
-              - key: http.status_code
+              - key: http.response.status_code
                 value:
                   intValue: "200"
             kind: 2
