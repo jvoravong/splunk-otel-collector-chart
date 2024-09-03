@@ -580,11 +580,6 @@ func testNodeJSTraces(t *testing.T) {
 	maskScopeVersion(*selectedTrace)
 	maskScopeVersion(expectedTraces)
 
-	// Will update expected results before test validations
-	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
-		err = golden.WriteTraces(t, expectedTracesFile, *selectedTrace)
-	}
-
 	err = ptracetest.CompareTraces(expectedTraces, *selectedTrace,
 		ptracetest.IgnoreResourceAttributeValue("container.id"),
 		ptracetest.IgnoreResourceAttributeValue("host.arch"),
@@ -616,6 +611,9 @@ func testNodeJSTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
+	if err != nil {
+		writeNewExpectedMetricsResult(t, expectedTracesFile, *selectedTrace)
+	}
 	require.NoError(t, err)
 }
 
@@ -648,11 +646,6 @@ func testJavaTraces(t *testing.T) {
 	maskScopeVersion(*selectedTrace)
 	maskScopeVersion(expectedTraces)
 
-	// Will update expected results before test validations
-	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
-		err = golden.WriteTraces(t, expectedTracesFile, *selectedTrace)
-	}
-
 	err = ptracetest.CompareTraces(expectedTraces, *selectedTrace,
 		ptracetest.IgnoreResourceAttributeValue("os.description"),
 		ptracetest.IgnoreResourceAttributeValue("process.pid"),
@@ -682,6 +675,9 @@ func testJavaTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
+	if err != nil {
+		writeNewExpectedMetricsResult(t, expectedTracesFile, *selectedTrace)
+	}
 	require.NoError(t, err)
 }
 
@@ -717,11 +713,6 @@ func testDotNetTraces(t *testing.T) {
 	maskSpanParentID(*selectedTrace)
 	maskSpanParentID(expectedTraces)
 
-	// Will update expected results before test validations
-	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
-		err = golden.WriteTraces(t, expectedTracesFile, *selectedTrace)
-	}
-
 	err = ptracetest.CompareTraces(expectedTraces, *selectedTrace,
 		ptracetest.IgnoreResourceAttributeValue("os.description"),
 		ptracetest.IgnoreResourceAttributeValue("process.pid"),
@@ -749,6 +740,9 @@ func testDotNetTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
+	if err != nil {
+		writeNewExpectedMetricsResult(t, expectedTracesFile, *selectedTrace)
+	}
 	require.NoError(t, err)
 }
 
@@ -833,11 +827,6 @@ func testK8sClusterReceiverMetrics(t *testing.T) {
 
 	metricNames := []string{"k8s.node.condition_ready", "k8s.namespace.phase", "k8s.pod.phase", "k8s.replicaset.desired", "k8s.replicaset.available", "k8s.daemonset.ready_nodes", "k8s.daemonset.misscheduled_nodes", "k8s.daemonset.desired_scheduled_nodes", "k8s.daemonset.current_scheduled_nodes", "k8s.container.ready", "k8s.container.memory_request", "k8s.container.memory_limit", "k8s.container.cpu_request", "k8s.container.cpu_limit", "k8s.deployment.desired", "k8s.deployment.available", "k8s.container.restarts", "k8s.container.cpu_request", "k8s.container.memory_request", "k8s.container.memory_limit"}
 
-	// Will update expected results before test validations
-	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
-		err = golden.WriteMetrics(t, expectedMetricsFile, *selected)
-	}
-
 	err = pmetrictest.CompareMetrics(expectedMetrics, *selected,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
@@ -874,6 +863,9 @@ func testK8sClusterReceiverMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreSubsequentDataPoints("k8s.container.ready", "k8s.container.restarts"),
 	)
+	if err != nil {
+		writeNewExpectedTracesResult(t, expectedMetricsFile, *selectedMetric)
+	}
 	require.NoError(t, err)
 }
 
@@ -1123,7 +1115,8 @@ func testAgentMetrics(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	expectedInternalMetrics, err := golden.ReadMetrics(filepath.Join(testDir, expectedValuesDir, "expected_internal_metrics.yaml"))
+	expectedInternalMetricsFile := filepath.Join(testDir, expectedValuesDir, "expected_internal_metrics.yaml")
+	expectedInternalMetrics, err := golden.ReadMetrics(expectedInternalMetricsFile)
 	require.NoError(t, err)
 
 	replaceWithStar := func(string) string { return "*" }
@@ -1134,11 +1127,6 @@ func testAgentMetrics(t *testing.T) {
 		return
 	}
 	require.NotNil(t, selectedInternalMetrics)
-
-	// Will update expected results before test validations
-	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
-		err = golden.WriteMetrics(t, expectedInternalMetricsFile, *selectedInternalMetrics)
-	}
 
 	err = pmetrictest.CompareMetrics(expectedInternalMetrics, *selectedInternalMetrics,
 		pmetrictest.IgnoreTimestamp(),
@@ -1181,6 +1169,9 @@ func testAgentMetrics(t *testing.T) {
 		pmetrictest.IgnoreScopeMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 	)
+	if err != nil {
+		writeNewExpectedTracesResult(t, expectedMetricsFile, *selectedMetric)
+	}
 	assert.NoError(t, err)
 
 	expectedKubeletStatsMetricsFile := filepath.Join(testDir, expectedValuesDir, "expected_kubeletstats_metrics.yaml")
@@ -1192,11 +1183,6 @@ func testAgentMetrics(t *testing.T) {
 		return
 	}
 	require.NotNil(t, selectedKubeletstatsMetrics)
-
-	// Will update expected results before test validations
-	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
-		err = golden.WriteMetrics(t, expectedKubeletStatsMetricsFile, *selectedKubeletstatsMetrics)
-	}
 
 	err = pmetrictest.CompareMetrics(expectedKubeletStatsMetrics, *selectedKubeletstatsMetrics,
 		pmetrictest.IgnoreTimestamp(),
@@ -1238,6 +1224,7 @@ func testAgentMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 	)
 	if err != nil {
+		writeNewExpectedTracesResult(t, expectedMetricsFile, *selectedMetric)
 		t.Skipf("we have trouble identifying exact payloads right now: %v", err)
 	} else {
 		assert.NoError(t, err)
