@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      UPDATE_EXPECTED_RESULTS:
+        description: 'Optional. Updates functional tests restsults before test validations'
+        required: false
+        default: 'false'
 
 env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
