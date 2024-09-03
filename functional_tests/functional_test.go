@@ -580,6 +580,11 @@ func testNodeJSTraces(t *testing.T) {
 	maskScopeVersion(*selectedTrace)
 	maskScopeVersion(expectedTraces)
 
+	// Will update expected results before test validations
+	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+		err = golden.WriteTraces(t, expectedTracesFile, *selectedTrace)
+	}
+
 	err = ptracetest.CompareTraces(expectedTraces, *selectedTrace,
 		ptracetest.IgnoreResourceAttributeValue("container.id"),
 		ptracetest.IgnoreResourceAttributeValue("host.arch"),
@@ -611,7 +616,6 @@ func testNodeJSTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
-
 	require.NoError(t, err)
 }
 
@@ -639,11 +643,15 @@ func testJavaTraces(t *testing.T) {
 		}
 		return selectedTrace != nil
 	}, 3*time.Minute, 5*time.Second)
-
 	require.NotNil(t, selectedTrace)
 
 	maskScopeVersion(*selectedTrace)
 	maskScopeVersion(expectedTraces)
+
+	// Will update expected results before test validations
+	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+		err = golden.WriteTraces(t, expectedTracesFile, *selectedTrace)
+	}
 
 	err = ptracetest.CompareTraces(expectedTraces, *selectedTrace,
 		ptracetest.IgnoreResourceAttributeValue("os.description"),
@@ -674,7 +682,6 @@ func testJavaTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
-
 	require.NoError(t, err)
 }
 
@@ -697,18 +704,23 @@ func testDotNetTraces(t *testing.T) {
 					selectedTrace = &trace
 					break
 				}
+				selectedTrace = &trace
 				break
 			}
 		}
 		return selectedTrace != nil
 	}, 3*time.Minute, 5*time.Second)
-
 	require.NotNil(t, selectedTrace)
 
 	maskScopeVersion(*selectedTrace)
 	maskScopeVersion(expectedTraces)
 	maskSpanParentID(*selectedTrace)
 	maskSpanParentID(expectedTraces)
+
+	// Will update expected results before test validations
+	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+		err = golden.WriteTraces(t, expectedTracesFile, *selectedTrace)
+	}
 
 	err = ptracetest.CompareTraces(expectedTraces, *selectedTrace,
 		ptracetest.IgnoreResourceAttributeValue("os.description"),
@@ -737,7 +749,6 @@ func testDotNetTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
-
 	require.NoError(t, err)
 }
 
@@ -818,10 +829,14 @@ func testK8sClusterReceiverMetrics(t *testing.T) {
 			break
 		}
 	}
-
 	require.NotNil(t, selected)
 
 	metricNames := []string{"k8s.node.condition_ready", "k8s.namespace.phase", "k8s.pod.phase", "k8s.replicaset.desired", "k8s.replicaset.available", "k8s.daemonset.ready_nodes", "k8s.daemonset.misscheduled_nodes", "k8s.daemonset.desired_scheduled_nodes", "k8s.daemonset.current_scheduled_nodes", "k8s.container.ready", "k8s.container.memory_request", "k8s.container.memory_limit", "k8s.container.cpu_request", "k8s.container.cpu_limit", "k8s.deployment.desired", "k8s.deployment.available", "k8s.container.restarts", "k8s.container.cpu_request", "k8s.container.memory_request", "k8s.container.memory_limit"}
+
+	// Will update expected results before test validations
+	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+		err = golden.WriteMetrics(t, expectedMetricsFile, *selected)
+	}
 
 	err = pmetrictest.CompareMetrics(expectedMetrics, *selected,
 		pmetrictest.IgnoreTimestamp(),
@@ -859,7 +874,6 @@ func testK8sClusterReceiverMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreSubsequentDataPoints("k8s.container.ready", "k8s.container.restarts"),
 	)
-
 	require.NoError(t, err)
 }
 
@@ -1121,6 +1135,11 @@ func testAgentMetrics(t *testing.T) {
 	}
 	require.NotNil(t, selectedInternalMetrics)
 
+	// Will update expected results before test validations
+	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+		err = golden.WriteMetrics(t, expectedInternalMetricsFile, *selectedInternalMetrics)
+	}
+
 	err = pmetrictest.CompareMetrics(expectedInternalMetrics, *selectedInternalMetrics,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
@@ -1164,7 +1183,8 @@ func testAgentMetrics(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	expectedKubeletStatsMetrics, err := golden.ReadMetrics(filepath.Join(testDir, expectedValuesDir, "expected_kubeletstats_metrics.yaml"))
+	expectedKubeletStatsMetricsFile := filepath.Join(testDir, expectedValuesDir, "expected_kubeletstats_metrics.yaml")
+	expectedKubeletStatsMetrics, err := golden.ReadMetrics(expectedKubeletStatsMetricsFile)
 	require.NoError(t, err)
 	selectedKubeletstatsMetrics := selectMetricSet(expectedKubeletStatsMetrics, "container.memory.usage", agentMetricsConsumer, false)
 	if selectedKubeletstatsMetrics == nil {
@@ -1172,6 +1192,12 @@ func testAgentMetrics(t *testing.T) {
 		return
 	}
 	require.NotNil(t, selectedKubeletstatsMetrics)
+
+	// Will update expected results before test validations
+	if os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+		err = golden.WriteMetrics(t, expectedKubeletStatsMetricsFile, *selectedKubeletstatsMetrics)
+	}
+
 	err = pmetrictest.CompareMetrics(expectedKubeletStatsMetrics, *selectedKubeletstatsMetrics,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
