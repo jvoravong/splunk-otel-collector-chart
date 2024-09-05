@@ -115,6 +115,8 @@ func setupOnce(t *testing.T) *sinks {
 			t.Log("Skipping setup as SKIP_SETUP is set to true")
 			return
 		}
+		// TODO: Fix Breaking change issue: /crd migrated to /conf/crd https://github.com/open-telemetry/opentelemetry-helm-charts/pull/1176
+		// https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-operator/UPGRADING.md#0560-to-0570
 		deployChartsAndApps(t)
 	})
 

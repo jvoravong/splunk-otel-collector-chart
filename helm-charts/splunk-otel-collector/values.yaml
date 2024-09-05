@@ -1163,7 +1163,8 @@ operator:
   enabled: false
   manager:
     collectorImage:
-      repository: otel/opentelemetry-collector-contrib # TODO: Address this issue
+      # TODO: Address this issue, we don't want to expose this if possible
+      repository: otel/opentelemetry-collector-contrib
   admissionWebhooks:
     certManager:
       # Annotate the certificate and issuer to ensure they are created after the cert-manager CRDs have been installed.
