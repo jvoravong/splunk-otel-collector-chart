@@ -1161,6 +1161,8 @@ service:
 
 operator:
   enabled: false
+  crds:
+    create: false
   manager:
     collectorImage:
       # TODO: Address this issue, we don't want to expose this if possible
