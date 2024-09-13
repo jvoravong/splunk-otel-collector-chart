@@ -115,6 +115,11 @@ func setupOnce(t *testing.T) *sinks {
 			t.Log("Skipping setup as SKIP_SETUP is set to true")
 			return
 		}
+		// deploy the chart and applications.
+		if os.Getenv("SKIP_SETUP") == "true" {
+			t.Log("Skipping setup as SKIP_SETUP is set to true")
+			return
+		}
 		deployChartsAndApps(t)
 	})
 

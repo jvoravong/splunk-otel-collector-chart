@@ -7,14 +7,18 @@ on:
   workflow_dispatch:
     inputs:
       UPDATE_EXPECTED_RESULTS:
-        description: 'Set this to true to update expected results and collect updated test output as a Github workflow artifact.'
+        description: 'Set this to update expected results and collect updated test output as a GitHub workflow artifact.'
         required: false
         default: false
+        type: choice
+        options:
+          - true
+          - false
 
 env:
-  # Make sure to exit early if cache segment download times out after 2 minutes.
-  # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+  UPDATE_EXPECTED_RESULTS: ${{ github.event.inputs.UPDATE_EXPECTED_RESULTS || 'false' }}
+
 jobs:
   kubernetes-test:
     env:
@@ -68,19 +72,19 @@ jobs:
       - name: Deploy cert-manager
         run: |
           make cert-manager
-      - name: run functional tests
+      - name: Run functional tests
         env:
           K8S_VERSION: ${{ matrix.k8s-version }}
-          UPDATE_EXPECTED_RESULTS: ${{ github.event.inputs.UPDATE_EXPECTED_RESULTS || 'false' }}
+          UPDATE_EXPECTED_RESULTS: ${{ github.env.UPDATE_EXPECTED_RESULTS }}
         run: |
           cd functional_tests
-          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=${{ env.UPDATE_EXPECTED_RESULTS }} go test -v -tags ${{ matrix.test-job }}
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=${{ github.env.UPDATE_EXPECTED_RESULTS }} go test -v -tags ${{ matrix.test-job }}
       - name: 'Upload test results'
-        if: failure() && env.UPDATE_EXPECTED_RESULTS == 'true'
+        if: ${{ github.event.inputs.UPDATE_EXPECTED_RESULTS == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: functional_tests-${{ matrix.test-job }}-${{ matrix.k8s-version }}
-          path: functional_tests/results
+          path: /results
           retention-days: 5
 
   eks-test:
