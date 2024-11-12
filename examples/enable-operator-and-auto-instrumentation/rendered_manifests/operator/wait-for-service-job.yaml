@@ -1,0 +1,36 @@
+---
+# Source: splunk-otel-collector/templates/operator/wait-for-service-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wait-for-webhook-service
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "2"
+  labels:
+    app.kubernetes.io/name: splunk-otel-collector
+    helm.sh/chart: splunk-otel-collector-0.112.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: "0.112.0"
+    app: splunk-otel-collector
+    component: otel-operator
+    chart: splunk-otel-collector-0.112.0
+    release: default
+    heritage: Helm
+    app.kubernetes.io/component: otel-operator
+spec:
+  template:
+    spec:
+      containers:
+        - name: wait-for-webhook
+          image: busybox
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              until nc -z default:default-splunk-otel-collector-operator-webhook 443; do
+                echo "Waiting for service to be accessible...";
+                sleep 1;
+              done;
+              echo "Operator Webhook Service is accessible."
+      restartPolicy: Never

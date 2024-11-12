@@ -1266,7 +1266,8 @@ instrumentation:
 # Full list of Helm value configurations: https://artifacthub.io/packages/helm/cert-manager/cert-manager?modal=values
 certmanager:
   enabled: false
-  installCRDs: true
+  crds:
+    enabled: true
 
 ################################################################################
 # Target Allocator
