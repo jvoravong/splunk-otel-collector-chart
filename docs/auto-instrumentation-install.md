@@ -481,3 +481,80 @@ The operator supports various methods for managing TLS certificates for the webh
 
 **Note**: While using a self-signed certificate offers a quicker and simpler setup, it has limitations, such as not being trusted by default by clients.
 This may be acceptable for testing purposes or internal environments. For complete configurations and additional guidance, please refer to the provided link to the Helm chart documentation.
+
+New docs
+
+##### Using a Self-Signed Certificate for the Webhook
+```yaml
+operator:
+  enabled: true
+  admissionWebhooks:
+    certManager:
+      enabled: false
+    autoGenerateCert:
+      enabled: true
+    # Update ttl
+# Ensure that certManager.enabled is set to false (this is the default value).
+```
+
+##### Using a Certmanager Deployed with the chart (to be removed)
+
+##### Using a Certmanager Deployed before the chart (to be removed)
+helm repo add jetstack https://charts.jetstack.io --force-update
+helm install cert-manager --namespace cert-manager jetstack/cert-manager
+
+##### Hooks
+1: Certmanager API check
+2: Certmanager Cert created
+3: Operator API checks
+4: Operator Inst created
+
+Here’s a concise version as a subsection for an existing advanced configuration document:
+
+---
+
+## Advanced Configuration: Cert-Manager and Operator Resource Dependencies
+
+When deploying `cert-manager` and operator resources with Helm, maintaining the correct installation order is critical to avoid dependency issues. Use Helm hooks and weights to enforce the proper sequence. Below is the recommended process:
+
+### Installation Order
+
+1. **Deploy Cert-Manager and CRDs**
+   Cert-Manager and its CRDs are installed during the initial Helm install.
+
+2. **Cert-Manager Readiness Check**
+   A post-install hook (weight `1`) verifies Cert-Manager is operational.
+
+3. **Install Issuer**
+   A post-install hook (weight `2`) deploys the Issuer, required for Certificates.
+
+4. **Install Certificate**
+   A post-install hook (weight `3`) deploys the Certificate.
+
+5. **Operator Readiness Check**
+   A post-install hook (weight `4`) validates the operator and its webhook readiness.
+
+6. **Install Instrumentation
+   A post-install hook (weight `5`) deploys Instrumentation resources, e.g., OpenTelemetry.
+
+### Annotations for Hooks and Weights
+
+To configure the order, annotate the Issuer and Certificate resources in your Helm chart values:
+
+- **Certificate Annotations**:
+  ```yaml
+  "helm.sh/hook": post-install,post-upgrade
+  "helm.sh/hook-weight": "3"
+  ```
+
+- **Issuer Annotations**:
+  ```yaml
+  "helm.sh/hook": post-install,post-upgrade
+  "helm.sh/hook-weight": "2"
+  ```
+
+### Notes:
+- Ensure `cert-manager` CRDs are fully operational before progressing.
+- Hook weights determine the order of execution; higher weights run later within the same hook phase.
+
+By following these steps, you can ensure smooth integration of `cert-manager` with the operator in advanced configurations.
