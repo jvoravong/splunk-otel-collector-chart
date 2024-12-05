@@ -1168,19 +1168,13 @@ operator:
   enabled: false
   admissionWebhooks:
     certManager:
-      # Annotate the certificate and issuer to ensure a particular install for certmanager and operator resources order.
-      # 1st) (Helm Install) deploys certmanager and CRDs
-      # 2nd) Post install weight 1 an apistatuscheck executes for certmanager
-      # 3rd) Post install weight 2 install the issuer
-      # 4th) Post install weight 3 install the certificate
-      # 5th) Post install weight 4 an apistatuscheck executes for the operator and operator webhook
-      # 6th) Post install weight 5 installs the Instrumentation opentelemetry.io/v1alpha1
+      # Annotate the certificate and issuer to ensure they are created after the cert-manager CRDs have been installed.
       certificateAnnotations:
         "helm.sh/hook": post-install,post-upgrade
-        "helm.sh/hook-weight": "3"
+        "helm.sh/hook-weight": "1"
       issuerAnnotations:
         "helm.sh/hook": post-install,post-upgrade
-        "helm.sh/hook-weight": "2"
+        "helm.sh/hook-weight": "1"
   # Collector deployment via the operator is not supported at this time.
   # The collector image repository is specified here to meet operator subchart constraints.
   manager:
