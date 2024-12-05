@@ -71,11 +71,25 @@ jobs:
         run: |
           make cert-manager
       - name: run functional tests
+        id: run-functional-tests
         env:
           K8S_VERSION: ${{ matrix.k8s-version }}
         run: |
           cd functional_tests
           TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=${{ env.UPDATE_EXPECTED_RESULTS }} go test -v -tags ${{ matrix.test-job }}
+      - name: Collect Kubernetes Cluster debug info on failure
+        if: always() && steps.run-functional-tests.outcome == 'failure'
+        id: collect-debug-info
+        run: |
+          echo "Functional tests failed. Collecting debug info for current state of the Kubernetes cluster..."
+          ./tools/splunk_kubernetes_debug_info.sh
+      - name: 'Upload Kubernetes Cluster debug info'
+        if: always() && steps.collect-debug-info.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-debug-info-${{ matrix.test-job }}-${{ matrix.k8s-version }}
+          path: splunk_kubernetes_debug_info*
+          retention-days: 5
       - name: 'Upload test results'
         if: always() && env.UPDATE_EXPECTED_RESULTS == 'true'
         uses: actions/upload-artifact@v4
