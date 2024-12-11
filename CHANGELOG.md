@@ -4,6 +4,15 @@
 <!-- For unreleased changes, see entries in .chloggen -->
 <!-- next version -->
 
+## [0.114.0] - 2024-12-11
+
+This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v0.114.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.114.0).
+
+### 💡 Enhancements 💡
+
+- `agent`: Make it so the default tolerations used to deploy the agent collector account for k8s distribution ()
+  OpenShift infra nodes and Azure system nodes will now be monitored by the agent by default
+
 ## [0.113.0] - 2024-11-22
 
 This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v0.113.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.113.0).
