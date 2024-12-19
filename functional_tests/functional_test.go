@@ -193,9 +193,17 @@ func deployChartsAndApps(t *testing.T) {
 	install := action.NewInstall(actionConfig)
 	install.Namespace = "default"
 	install.ReleaseName = "sock"
-	install.IncludeCRDs = true
+	// install.WaitForJobs = true
+	// The default timeout is 5 mins when using the helm cli
+	install.Timeout = 5 * time.Minute
 	_, err = install.Run(chart, values)
 	if err != nil {
+		actionConfig = new(action.Configuration)
+		if err := actionConfig.Init(kube.GetConfig(testKubeConfig, "", "default"), "default", os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
+			t.Logf(format+"\n", v...)
+		}); err != nil {
+			require.NoError(t, err)
+		}
 		t.Logf("error reported during helm install: %v\n", err)
 		retryUpgrade := action.NewUpgrade(actionConfig)
 		retryUpgrade.Namespace = "default"
