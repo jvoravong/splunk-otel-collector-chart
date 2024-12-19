@@ -193,6 +193,7 @@ func deployChartsAndApps(t *testing.T) {
 	install := action.NewInstall(actionConfig)
 	install.Namespace = "default"
 	install.ReleaseName = "sock"
+	install.WaitForJobs = true
 	_, err = install.Run(chart, values)
 	if err != nil {
 		t.Logf("error reported during helm install: %v\n", err)
