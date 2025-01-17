@@ -1,5 +1,110 @@
 # Upgrade guidelines
 
+## 0.113.0 to 0.116.0
+
+### Overview
+
+This guide provides detailed instructions for upgrading from version `0.113.0` to `0.116.0` of the Helm chart. It covers migration steps for new users, current users transitioning to the recommended configuration, and previous users maintaining legacy functionality.
+
+---
+
+### **New Users**
+
+For a fresh installation, use the following Helm values to enable the operator and CRDs:
+
+```yaml
+operatorcrds.install: true
+operator.enabled: true
+```
+
+Simply run:
+
+```bash
+helm install <release-name> splunk-otel-collector \
+  --set operatorcrds.install=true,operator.enabled=true
+```
+
+---
+
+### **Current Users (Recommended Migration)**
+
+To adopt the new recommended configuration, follow these steps:
+
+#### Step 1: Install CRDs Manually
+CRDs must be installed manually, as Helm does not upgrade CRDs by default. Use one of the following methods:
+
+1. **Apply the CRDs using `kubectl`:**
+
+   ```bash
+   kubectl apply -f https://github.com/splunk/splunk-otel-collector-crds/raw/main/crds.yaml
+   ```
+
+2. **Reinstall the chart:**
+  - Delete the existing chart:
+    ```bash
+    helm delete <release-name>
+    ```
+  - Reinstall with the recommended configuration:
+    ```bash
+    helm install <release-name> splunk-otel-collector \
+      --set operatorcrds.install=true,operator.enabled=true
+    ```
+
+#### Step 2: Resolve Templated CRDs Deletion
+If templated CRDs have been deleted, you may encounter errors during migration. To resolve this:
+- Reapply the CRDs manually using `kubectl`.
+- Alternatively, redeploy the chart with the correct CRD installation settings:
+  ```bash
+  helm install <release-name> splunk-otel-collector \
+    --set operatorcrds.install=true,operator.enabled=true
+  ```
+
+---
+
+### **Previous Users (Maintaining Legacy Functionality)**
+
+For users opting to keep the legacy configuration, use the following Helm values:
+
+```yaml
+operator.enabled: true
+operator.crds.create: true
+```
+
+However, be aware of a potential race condition during installation or upgrade. This can lead to errors such as:
+
+```plaintext
+ERROR: INSTALLATION FAILED: failed post-install: warning: Hook post-install splunk-otel-collector/templates/operator/instrumentation.yaml failed: 1 error occurred:
+* Internal error occurred: failed calling webhook "minstrumentation.kb.io": failed to call webhook: Post "https://splunk-otel-collector-operator-webhook.default.svc:443/mutate-opentelemetry-io-v1alpha1-instrumentation?timeout=10s": dial tcp X.X.X.X:443: connect: connection refused
+```
+
+#### **Troubleshooting Steps**
+1. **Verify webhook service connectivity:**
+   Ensure the `splunk-otel-collector-operator-webhook` service is running and accessible.
+   ```bash
+   kubectl get svc -n default
+   ```
+
+2. **Restart the operator:**
+   Restart the operator deployment to resolve any transient issues.
+   ```bash
+   kubectl rollout restart deployment splunk-otel-collector-operator -n default
+   ```
+
+3. **Consider migrating to the new configuration:**
+   Resolve the race condition by migrating to the recommended configuration using:
+   ```bash
+   helm upgrade <release-name> splunk-otel-collector \
+     --set operatorcrds.install=true,operator.enabled=true
+   ```
+
+---
+
+### Key Notes
+- Helm only installs CRDs during the `helm install` phase. CRDs are not upgraded during `helm upgrade`.
+- Migrating to the recommended configuration eliminates known race conditions and ensures future compatibility.
+
+---
+
 ## 0.105.5 to 0.108.0
 
 We've simplified the Helm chart configuration for `operator` auto-instrumentation.
