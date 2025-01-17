@@ -1176,14 +1176,11 @@ service:
 # Specify whether the chart should install CRDs automatically.
 # Related Documentation: https://github.com/signalfx/splunk-otel-collector-chart/blob/main/docs/auto-instrumentation-install.md#crd-management
 operatorcrds:
-  # Set to true to install CRDs automatically, or false to manage them manually.
+  # TODO: UPDATE Set to true to install CRDs automatically, or false to manage them manually.
   install: false
 
 operator:
   enabled: false
-  crds:
-    # This value is set to false and cannot be changed; use `operatorcrds.install` instead.
-    create: false
   admissionWebhooks:
     certManager:
       # Annotate the issuer and certificate to ensure they are created after the cert-manager CRDs
