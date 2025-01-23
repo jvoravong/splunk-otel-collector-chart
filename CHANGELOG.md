@@ -4,6 +4,10 @@
 <!-- For unreleased changes, see entries in .chloggen -->
 <!-- next version -->
 
+## [0.117.0] - 2025-01-23
+
+This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v0.117.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.117.0).
+
 ## [0.116.0] - 2025-01-17
 
 This Splunk OpenTelemetry Collector for Kubernetes release adopts the [Splunk OpenTelemetry Collector v0.116.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.116.0).
