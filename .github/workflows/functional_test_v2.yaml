@@ -80,8 +80,7 @@ jobs:
         env:
           K8S_VERSION: ${{ matrix.k8s-version }}
         run: |
-          cd functional_tests
-          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=${{ env.UPLOAD_UPDATED_EXPECTED_RESULTS }} go test -v -tags ${{ matrix.test-job }}
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=${{ env.UPLOAD_UPDATED_EXPECTED_RESULTS }} TAGS=${{ matrix.test-job }} make functionaltest
       - name: Collect Kubernetes Cluster debug info on failure
         if: always() && (steps.run-functional-tests.outcome == 'failure' || env.UPLOAD_KUBERNETES_DEBUG_INFO == 'true')
         id: collect-debug-info

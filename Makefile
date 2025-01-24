@@ -92,6 +92,15 @@ unittest: ## Run unittests on the Helm chart
 	@echo "Running unit tests on helm chart..."
 	cd helm-charts/splunk-otel-collector && helm unittest --strict -f "../../test/unittests/*.yaml" . || exit 1
 
+# Example Usage:
+#   make functionaltest
+#   make functionaltest TEARDOWN_BEFORE_SETUP=true SKIP_SETUP=true TAGS="functional"
+.PHONY: functionaltest
+functionaltest: ## Run functional tests for this Helm chart with optional tags
+	@echo "Running functional tests for this helm chart..."
+	cd functional_tests
+	cd functional_tests && go mod tidy && go test -v $(if $(TAGS),-tags $(TAGS)) || exit 1
+
 ##@ Changelog
 # Tasks related to changelog management
 
