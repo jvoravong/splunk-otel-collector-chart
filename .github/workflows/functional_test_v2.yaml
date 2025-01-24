@@ -16,6 +16,7 @@ on:
         default: false
 
 env:
+  GO_VERSION: 1.22.10
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
@@ -48,7 +49,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.22.5
+          go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: '**/go.sum'
       - name: Create kind cluster
         uses: helm/kind-action@v1.12.0
@@ -109,17 +110,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.8
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -172,17 +164,8 @@ jobs:
         run: cd base && git checkout HEAD^
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.8
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -235,17 +218,8 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.8
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -290,17 +264,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.8
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - uses: 'google-github-actions/auth@v2.1.7'
         with:
           project_id: ${{ secrets.GKE_PROJECT }}
@@ -353,17 +318,8 @@ jobs:
         run: cd base && git checkout HEAD^
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.8
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - uses: 'google-github-actions/auth@v2.1.7'
         with:
           project_id: ${{ secrets.GKE_PROJECT }}
@@ -405,17 +361,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.8
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - name: Set up kubelogin for non-interactive login
         uses: azure/use-kubelogin@v1.2
         with:
@@ -453,17 +400,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.8
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - name: Update dependencies
         run: |
           make dep-update
