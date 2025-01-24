@@ -132,7 +132,8 @@ jobs:
           HOST_ENDPOINT: 0.0.0.0
         run: |
           cd functional_tests
-          TEARDOWN_BEFORE_SETUP=true go test -v -tags functional
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=functional TAGS=${{ matrix.test-job }} make functionaltest
+
   eks-upgrade-test:
     name: Test helm upgrade in EKS - credentials needed
     needs: kubernetes-test
@@ -194,8 +195,7 @@ jobs:
         env:
           HOST_ENDPOINT: 0.0.0.0
         run: |
-          cd functional_tests
-          go test -v -tags functional
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=functional TAGS=${{ matrix.test-job }} make functionaltest
 
   eks-upgrade-from-release-test:
     name: Test helm upgrade from release in EKS - credentials needed
@@ -248,8 +248,8 @@ jobs:
         env:
           HOST_ENDPOINT: 0.0.0.0
         run: |
-          cd functional_tests
-          go test -v -tags functional
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=functional TAGS=${{ matrix.test-job }} make functionaltest
+
   gke-autopilot-test:
     name: Test helm install in GKE/Autopilot - credentials needed
     needs: kubernetes-test
@@ -285,8 +285,7 @@ jobs:
         env:
           HOST_ENDPOINT: 0.0.0.0
         run: |
-          cd functional_tests
-          TEARDOWN_BEFORE_SETUP=true go test -v -tags functional
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=functional TAGS=${{ matrix.test-job }} make functionaltest
 
   gke-autopilot-upgrade-test:
     name: Test helm upgrade in GKE/Autopilot - credentials needed
@@ -344,8 +343,7 @@ jobs:
         env:
           HOST_ENDPOINT: 0.0.0.0
         run: |
-          cd functional_tests
-          go test -v -tags functional
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=functional TAGS=${{ matrix.test-job }} make functionaltest
 
   aks-windows-test:
     name: Test helm install in AKS - credentials needed
@@ -383,8 +381,7 @@ jobs:
         env:
           HOST_ENDPOINT: 0.0.0.0
         run: |
-          cd functional_tests
-          TEARDOWN_BEFORE_SETUP=true go test -v -tags functional
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=functional TAGS=${{ matrix.test-job }} make functionaltest
 
   gce-autopilot-test:
     name: Test helm install in GCE (kops) - credentials needed
@@ -414,5 +411,4 @@ jobs:
           HOST_ENDPOINT: 0.0.0.0
           KUBECONFIG: /tmp/kubeconfig
         run: |
-          cd functional_tests
-          TEARDOWN_BEFORE_SETUP=true go test -v -tags functional
+          TEARDOWN_BEFORE_SETUP=true UPDATE_EXPECTED_RESULTS=functional TAGS=${{ matrix.test-job }} make functionaltest
