@@ -627,7 +627,7 @@ func testNodeJSTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
-	if err != nil && os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+	if os.Getenv("UPDATE_EXPECTED_TEST_RESULTS") == "true" {
 		writeNewExpectedTracesResult(t, expectedTracesFile, selectedTrace)
 	}
 	require.NoError(t, err)
@@ -760,7 +760,7 @@ func testJavaTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
-	if err != nil && os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+	if os.Getenv("UPDATE_EXPECTED_TEST_RESULTS") == "true" {
 		writeNewExpectedTracesResult(t, expectedTracesFile, selectedTrace)
 	}
 	require.NoError(t, err)
@@ -825,7 +825,7 @@ func testDotNetTraces(t *testing.T) {
 		ptracetest.IgnoreResourceSpansOrder(),
 		ptracetest.IgnoreScopeSpansOrder(),
 	)
-	if err != nil && os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+	if os.Getenv("UPDATE_EXPECTED_TEST_RESULTS") == "true" {
 		writeNewExpectedTracesResult(t, expectedTracesFile, selectedTrace)
 	}
 	require.NoError(t, err)
@@ -949,7 +949,7 @@ func testK8sClusterReceiverMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreSubsequentDataPoints("k8s.container.ready", "k8s.container.restarts", "k8s.pod.phase"),
 	)
-	if err != nil && os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+	if os.Getenv("UPDATE_EXPECTED_TEST_RESULTS") == "true" {
 		writeNewExpectedMetricsResult(t, expectedMetricsFile, selectedMetrics)
 	}
 	require.NoError(t, err)
@@ -1225,7 +1225,7 @@ func testAgentMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreSubsequentDataPoints("otelcol_receiver_accepted_log_records", "otelcol_receiver_refused_log_records"),
 	)
-	if err != nil && os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+	if os.Getenv("UPDATE_EXPECTED_TEST_RESULTS") == "true" {
 		writeNewExpectedMetricsResult(t, expectedInternalMetricsFile, selectedInternalMetrics)
 	}
 	assert.NoError(t, err)
@@ -1279,7 +1279,7 @@ func testAgentMetrics(t *testing.T) {
 		pmetrictest.IgnoreScopeMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 	)
-	if err != nil && os.Getenv("UPDATE_EXPECTED_RESULTS") == "true" {
+	if os.Getenv("UPDATE_EXPECTED_TEST_RESULTS") == "true" {
 		writeNewExpectedMetricsResult(t, expectedKubeletStatsMetricsFile, selectedKubeletstatsMetrics)
 	}
 	assert.NoError(t, err)

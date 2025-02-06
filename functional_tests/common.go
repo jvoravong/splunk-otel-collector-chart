@@ -92,11 +92,15 @@ func resetLogsSink(t *testing.T, lc *consumertest.LogsSink) {
 }
 
 func writeNewExpectedTracesResult(t *testing.T, file string, trace *ptrace.Traces) {
-	require.NoError(t, os.MkdirAll("results", 0755))
-	require.NoError(t, golden.WriteTraces(t, filepath.Join("results", filepath.Base(file)), *trace))
+	f := filepath.Join("results", filepath.Base(file))
+	require.NoError(t, os.MkdirAll(filepath.Dir(f), 0755))
+	require.NoError(t, golden.WriteTraces(t, f, *trace))
+	t.Logf("Created new expected traces test result file: %s", f)
 }
 
 func writeNewExpectedMetricsResult(t *testing.T, file string, metric *pmetric.Metrics) {
-	require.NoError(t, os.MkdirAll("results", 0755))
-	require.NoError(t, golden.WriteMetrics(t, filepath.Join("results", filepath.Base(file)), *metric))
+	f := filepath.Join("results", filepath.Base(file))
+	require.NoError(t, os.MkdirAll(filepath.Dir(f), 0755))
+	require.NoError(t, golden.WriteMetrics(t, f, *metric))
+	t.Logf("Created new expected metrics test result file: %s", f)
 }

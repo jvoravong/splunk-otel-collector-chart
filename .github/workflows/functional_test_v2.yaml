@@ -6,15 +6,22 @@ on:
     branches: [ main ]
   workflow_dispatch:
     inputs:
-      UPLOAD_UPDATED_EXPECTED_RESULTS:
-        description: 'Set this to true to upload updated golden file expected results and upload these results as a Github workflow artifact.'
+      UPLOAD_UPDATED_EXPECTED_TEST_RESULTS:
+        description: 'Set this to true to upload updated golden file expected test results and upload these results as a GitHub workflow artifact.'
         required: false
-        default: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
       UPLOAD_KUBERNETES_DEBUG_INFO:
-        description: 'Set this to true to collect the debug info of the k8s cluster and upload this info as a Github workflow artifact.'
+        description: 'Set this to true to collect the debug info of the k8s cluster and upload this info as a GitHub workflow artifact.'
         required: false
-        default: false
-
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 env:
   GO_VERSION: 1.22.10
   # Make sure to exit early if cache segment download times out after 2 minutes.
@@ -25,7 +32,7 @@ jobs:
     env:
       KUBECONFIG: /tmp/kube-config-splunk-otel-collector-chart-functional-testing
       KUBE_TEST_ENV: kind
-      UPLOAD_UPDATED_EXPECTED_RESULTS: ${{ github.event.inputs.UPLOAD_UPDATED_EXPECTED_RESULTS || 'false' }}
+      UPLOAD_UPDATED_EXPECTED_TEST_RESULTS: ${{ github.event.inputs.UPLOAD_UPDATED_EXPECTED_TEST_RESULTS || 'false' }}
       UPLOAD_KUBERNETES_DEBUG_INFO: ${{ github.event.inputs.UPLOAD_KUBERNETES_DEBUG_INFO || 'false' }}
     strategy:
       fail-fast: false
@@ -87,11 +94,11 @@ jobs:
           name: k8s-debug-info-${{ matrix.test-job }}-${{ matrix.k8s-version }}
           path: tools/splunk_kubernetes_debug_info_*
           retention-days: 5
-      - name: Upload test results
-        if: always() && env.UPLOAD_UPDATED_EXPECTED_RESULTS == 'true'
+      - name: Upload updated test results
+        if: always() && env.UPLOAD_UPDATED_EXPECTED_TEST_RESULTS == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: functional_tests-${{ matrix.test-job }}-${{ matrix.k8s-version }}
+          name: expected-test-results-${{ matrix.test-job }}-${{ matrix.k8s-version }}
           path: functional_tests/results
           retention-days: 5
 

@@ -30,6 +30,7 @@ dependencies:
   - name: opentelemetry-operator-crds
     version: 0.0.1
     alias: operatorcrds
+    repository: file://charts/opentelemetry-operator-crds
     condition: operatorcrds.install
   - name: opentelemetry-operator
     version: 0.71.2
