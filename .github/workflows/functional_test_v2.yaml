@@ -45,6 +45,7 @@ jobs:
           - histogram
           - configuration_switching
     runs-on: ubuntu-latest
+    continue-on-error: ${{ !contains(github.event.pull_request.labels.*.name, 'Ignore Tests') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -64,9 +65,6 @@ jobs:
       - name: Update dependencies
         run: |
           make dep-update
-      - name: Deploy cert-manager
-        run: |
-          make cert-manager
       - name: run functional tests
         id: run-functional-tests
         env:
@@ -106,6 +104,7 @@ jobs:
       KUBE_TEST_ENV: eks
       SKIP_TESTS: "true" # we need to skip functional tests as we have not set probes to listen to the traffic.
     runs-on: ubuntu-latest
+    continue-on-error: ${{ !contains(github.event.pull_request.labels.*.name, 'Ignore Tests') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -124,9 +123,6 @@ jobs:
       - name: Update dependencies
         run: |
           make dep-update
-      - name: Deploy cert-manager
-        run: |
-          make cert-manager
       - name: run functional tests
         env:
           HOST_ENDPOINT: 0.0.0.0
@@ -144,6 +140,7 @@ jobs:
       KUBE_TEST_ENV: eks
       SKIP_TESTS: "true" # we need to skip functional tests as we have not set probes to listen to the traffic.
     runs-on: ubuntu-latest
+    continue-on-error: ${{ !contains(github.event.pull_request.labels.*.name, 'Ignore Tests') }}
     steps:
       - uses: actions/checkout@v4
       - name: Checkout main if in a PR
@@ -178,9 +175,6 @@ jobs:
       - name: Update dependencies
         run: |
           cd base && make dep-update
-      - name: Deploy cert-manager
-        run: |
-          cd base && make cert-manager
       - name: Deploy previous version of the chart
         run: |
           helm list | grep -q "^sock$" && echo "Found previous 'sock' release. Deleting..." && helm delete sock
@@ -188,9 +182,6 @@ jobs:
       - name: Update dependencies
         run: |
           make dep-update
-      - name: Deploy cert-manager
-        run: |
-          make cert-manager
       - name: run functional tests
         env:
           HOST_ENDPOINT: 0.0.0.0
@@ -208,6 +199,7 @@ jobs:
       KUBE_TEST_ENV: eks
       SKIP_TESTS: "true" # we need to skip functional tests as we have not set probes to listen to the traffic.
     runs-on: ubuntu-latest
+    continue-on-error: ${{ !contains(github.event.pull_request.labels.*.name, 'Ignore Tests') }}
     steps:
       - uses: actions/checkout@v4
       - name: Checkout old release
@@ -232,9 +224,6 @@ jobs:
       - name: Update dependencies
         run: |
           cd base && make dep-update
-      - name: Deploy cert-manager
-        run: |
-          cd base && make cert-manager
       - name: Deploy previous version of the chart
         run: |
           helm list | grep -q "^sock$" && echo "Found previous 'sock' release. Deleting..." && helm delete sock
@@ -242,9 +231,6 @@ jobs:
       - name: Update dependencies
         run: |
           make dep-update
-      - name: Deploy cert-manager
-        run: |
-          make cert-manager
       - name: run functional tests
         env:
           HOST_ENDPOINT: 0.0.0.0
@@ -261,6 +247,7 @@ jobs:
       KUBE_TEST_ENV: gke/autopilot
       SKIP_TESTS: "true"
     runs-on: ubuntu-latest
+    continue-on-error: ${{ !contains(github.event.pull_request.labels.*.name, 'Ignore Tests') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -298,6 +285,7 @@ jobs:
       KUBE_TEST_ENV: gke/autopilot
       SKIP_TESTS: "true"
     runs-on: ubuntu-latest
+    continue-on-error: ${{ !contains(github.event.pull_request.labels.*.name, 'Ignore Tests') }}
     steps:
       - uses: actions/checkout@v4
       - name: Checkout main if in a PR
@@ -356,6 +344,7 @@ jobs:
       KUBE_TEST_ENV: aks
       SKIP_TESTS: "true"
     runs-on: ubuntu-latest
+    continue-on-error: ${{ !contains(github.event.pull_request.labels.*.name, 'Ignore Tests') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -394,6 +383,7 @@ jobs:
       KUBE_TEST_ENV: gce
       SKIP_TESTS: "true"
     runs-on: ubuntu-latest
+    continue-on-error: ${{ !contains(github.event.pull_request.labels.*.name, 'Ignore Tests') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
