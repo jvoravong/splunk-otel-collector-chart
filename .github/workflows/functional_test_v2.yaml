@@ -46,6 +46,7 @@ jobs:
           - configuration_switching
           - k8sevents
           - istio
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && !contains(github.event.pull_request.labels.*.name, 'Skip Upgrade Tests') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
