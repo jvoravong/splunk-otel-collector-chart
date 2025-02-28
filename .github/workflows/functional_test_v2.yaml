@@ -67,9 +67,6 @@ jobs:
       - name: Update dependencies
         run: |
           make dep-update
-      - name: Deploy cert-manager
-        run: |
-          make cert-manager
       - name: run functional tests
         id: run-functional-tests
         env:
@@ -126,9 +123,6 @@ jobs:
       - name: Update dependencies
         run: |
           make dep-update
-      - name: Deploy cert-manager
-        run: |
-          make cert-manager
       - name: run functional tests
         env:
           HOST_ENDPOINT: 0.0.0.0
@@ -180,9 +174,6 @@ jobs:
       - name: Update dependencies
         run: |
           cd base && make dep-update
-      - name: Deploy cert-manager
-        run: |
-          cd base && make cert-manager
       - name: Deploy previous version of the chart
         run: |
           helm list | grep -q "^sock$" && echo "Found previous 'sock' release. Deleting..." && helm delete sock
@@ -190,9 +181,6 @@ jobs:
       - name: Update dependencies
         run: |
           make dep-update
-      - name: Deploy cert-manager
-        run: |
-          make cert-manager
       - name: run functional tests
         env:
           HOST_ENDPOINT: 0.0.0.0
@@ -234,9 +222,6 @@ jobs:
       - name: Update dependencies
         run: |
           cd base && make dep-update
-      - name: Deploy cert-manager
-        run: |
-          cd base && make cert-manager
       - name: Deploy previous version of the chart
         run: |
           helm list | grep -q "^sock$" && echo "Found previous 'sock' release. Deleting..." && helm delete sock
@@ -244,9 +229,6 @@ jobs:
       - name: Update dependencies
         run: |
           make dep-update
-      - name: Deploy cert-manager
-        run: |
-          make cert-manager
       - name: run functional tests
         env:
           HOST_ENDPOINT: 0.0.0.0
