@@ -1175,12 +1175,13 @@ func testAgentMetrics(t *testing.T) {
 
 	replaceWithStar := func(string) string { return "*" }
 
-	selectedInternalMetrics := selectMetricSet(expectedInternalMetrics, "otelcol_process_runtime_total_alloc_bytes", agentMetricsConsumer, false)
+	selectedInternalMetrics := selectMetricSet(expectedInternalMetrics, "otelcol_process_runtime_total_alloc_bytes", agentMetricsConsumer, true)
 	if selectedInternalMetrics == nil {
 		t.Skip("No metric batch identified with the right metric count, exiting")
 		return
 	}
 	require.NotNil(t, selectedInternalMetrics)
+	writeNewExpectedMetricsResult(t, expectedInternalMetricsFile, selectedInternalMetrics)
 
 	err = pmetrictest.CompareMetrics(expectedInternalMetrics, *selectedInternalMetrics,
 		pmetrictest.IgnoreTimestamp(),

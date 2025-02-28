@@ -83,19 +83,19 @@ jobs:
           echo "Functional tests failed. Collecting debug info for current state of the Kubernetes cluster..."
           cd tools
           ./splunk_kubernetes_debug_info.sh
-      - name: Upload Kubernetes Cluster debug info
-        if: always() && (steps.run-functional-tests.outcome == 'failure' || env.UPLOAD_KUBERNETES_DEBUG_INFO == 'true')
-        uses: actions/upload-artifact@v4
-        with:
-          name: k8s-debug-info-${{ matrix.test-job }}-${{ matrix.k8s-version }}
-          path: tools/splunk_kubernetes_debug_info_*
-          retention-days: 5
+
+      - name: Find changed files
+        id: changed-files
+        run: |
+          git fetch --depth=2 origin ${{ github.ref }}
+          echo "CHANGED_FILES=$(git diff --name-only HEAD^ HEAD functional_tests/results | xargs)" >> $GITHUB_ENV
+
       - name: Upload test results
-        if: always() && env.UPLOAD_UPDATED_EXPECTED_RESULTS == 'true'
+        if: always() && env.UPLOAD_UPDATED_EXPECTED_RESULTS == 'true' && env.CHANGED_FILES != ''
         uses: actions/upload-artifact@v4
         with:
           name: functional_tests-${{ matrix.test-job }}-${{ matrix.k8s-version }}
-          path: functional_tests/results
+          path: ${{ env.CHANGED_FILES }}
           retention-days: 5
 
   eks-test:
