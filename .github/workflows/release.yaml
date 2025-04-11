@@ -5,6 +5,12 @@ on:
   push:
     branches:
       - main
+  workflow_run:
+    workflows:
+      - "Check for new chart dependency updates"
+      - "Check for new chart release"
+    types:
+      - completed
 
 jobs:
   maybe_update:

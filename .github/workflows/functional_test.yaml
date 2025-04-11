@@ -2,7 +2,12 @@ name: Splunk Platform Functional Test
 
 on:
   pull_request:
-
+  workflow_run:
+    workflows:
+      - "Check for new chart dependency updates"
+      - "Check for new chart release"
+    types:
+      - completed
 env:
   GO_VERSION: 1.24.1
   # Make sure to exit early if cache segment download times out after 2 minutes.

@@ -5,7 +5,14 @@ name: Ensure valid and up-to-date Changelog
 #   2. A new entry is added for updates to chart templates or rendered example content.
 #   3. Bypass validation with a 'Skip Changelog' label or a PR title containing '[chore]'.
 
-on: pull_request
+on:
+  pull_request:
+  workflow_run:
+    workflows:
+      - "Check for new chart dependency updates"
+      - "Check for new chart release"
+    types:
+      - completed
 
 jobs:
   validate-changelog:

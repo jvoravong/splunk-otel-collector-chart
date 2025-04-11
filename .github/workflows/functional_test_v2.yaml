@@ -14,6 +14,12 @@ on:
         description: 'Set this to true to collect the debug info of the k8s cluster and upload this info as a Github workflow artifact.'
         required: false
         default: false
+  workflow_run:
+    workflows:
+      - "Check for new chart dependency updates"
+      - "Check for new chart release"
+    types:
+      - completed
 
 env:
   GO_VERSION: 1.23.6
