@@ -149,6 +149,59 @@ collect_data_namespace() {
      fi
    done
 
+    # Aggregate event and job files per namespace
+    for ns in "${namespaces_array[@]}"; do
+      for type in "events" "jobs"; do
+        # Match files for the current namespace and type
+        files=("$temp_dir/namespace_${ns}_${type}_"*)
+
+        # Check if there are any matching files
+        if [[ -e "${files[0]}" ]]; then
+          combined_file="$temp_dir/namespace_${ns}_${type}_combined.yaml"
+          echo "Aggregating ${type} files for namespace $ns into $combined_file"
+
+          # Concatenate all matching files into the combined file
+          cat "${files[@]}" > "$combined_file"
+
+          # Remove the original individual files
+          rm -f "${files[@]}"
+        fi
+      done
+    done
+
+    # Collect logs from every pod and save them into a subdirectory
+    for ns in "${namespaces_array[@]}"; do
+      # Create a subdirectory for logs if it doesn't exist
+      log_dir="$temp_dir/namespace_logs"
+      mkdir -p "$log_dir"
+
+      # Get all pods in the namespace
+      pods=$(kubectl get pods -n "$ns" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+
+      for pod in $pods; do
+        # Define the log file path
+        log_file="$log_dir/${ns}_${pod}_logs.log"
+
+        # Collect the top 500 and bottom 500 lines of logs
+        cmd="kubectl logs $pod -n $ns"
+        output=$(eval "$cmd" | (head -n 500; echo -e "\n...\n"; tail -n 500))
+
+        # Save the logs to the file
+        echo "$output" > "$log_file"
+      done
+    done
+
+  # Collect logs from specific wiz
+  pods=$(kubectl get pods -n "$ns" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep -E "$k8s_object_name_filter")
+  # Collect logs from a single agent pod
+  agent_pod=$(echo "$pods" | grep "wiz" | head -n 1)
+  if [ -n "$agent_pod" ]; then
+    cmd="kubectl logs $agent_pod -n $ns"
+    output=$(eval "$cmd")
+    write_output "$output" "$temp_dir/namespace_${ns}_logs_pod_${agent_pod}.log" "$cmd"
+    pods=$(echo "$pods" | grep -v "$agent_pod")
+  fi
+
   # Collect logs from specific pods
   pods=$(kubectl get pods -n "$ns" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep -E "$k8s_object_name_filter")
   # Collect logs from a single agent pod
