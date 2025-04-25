@@ -21,6 +21,8 @@
 #         curl -s https://raw.githubusercontent.com/signalfx/splunk-otel-collector-chart/main/tools/splunk_kubernetes_debug_info.sh | bash
 #    4.2. Via Terminal and Local Code:
 #         ./splunk_kubernetes_debug_info.sh [NAMESPACES=namespace1,namespace2,...] [K8S_OBJECT_NAME_FILTER=splunk|collector|otel|certmanager|test|sck|sock|customname]
+#    4.3. Via Terminal and Curl:
+#         curl -s https://raw.githubusercontent.com/signalfx/splunk-otel-collector-chart/main/tools/splunk_kubernetes_debug_info.sh | bash
 #    Note: If no namespaces are specified, the script will collect information from all namespaces.
 # Sensitive Data Handling:
 # The script attempts to redact sensitive information where possible, including tokens, passwords, and certificates.
@@ -121,6 +123,13 @@ collect_data_namespace() {
       "ciliumnodes"
       "policyendpoints"
       "securitygrouppolicies"
+      "external-secrets"
+      "external-secrets-generators"
+      "external-secrets-webhook"
+      "cninodes"
+      "opampbridge"
+      "vaultdynamicsecret"
+      "webhookl"
     )
 
    for type in "${object_types[@]}"; do
