@@ -57,14 +57,72 @@ write_output() {
   fi
 
   # Redact sensitive information from output
-  redact_sensitive_info "$output" "$file_name"
+  redact_sensitive_info_local "$output" "$file_name"
+}
+
+
+# Function: redact_sensitive_info
+# Description: Redacts sensitive information from a given input string and returns the redacted content as a string.
+#              The function uses `awk` to redact specific patterns such as certificates, sensitive data, tokens, and passwords.
+# Usage: redact_sensitive_info "$input_string"
+redact_sensitive_info_local() {
+    local input="$1"
+
+    # Redact sensitive information from the input string using awk and return the result
+    echo "$input" | awk '
+    # Redact certificate sections
+    /BEGIN CERTIFICATE/,/END CERTIFICATE/ {
+        if (/BEGIN CERTIFICATE/) print;
+        else if (/END CERTIFICATE/) print;
+        else print "    [CERTIFICATE REDACTED]";
+        next;
+    }
+    # Redact sensitive data patterns like caBundle, certificates, keys
+    /caBundle|ca\.crt|client\.crt|client\.key|tls\.crt|tls\.key/ {
+        print "    [SENSITIVE DATA REDACTED]";
+        next;
+    }
+    # Redact tokens
+    /[Tt][Oo][Kk][Ee][Nn]/ {
+        print "    [TOKEN REDACTED]";
+        next;
+    }
+    # Redact passwords
+    /[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]/ {
+        print "    [PASSWORD REDACTED]";
+        next;
+    }
+    # Print other content unchanged
+    {print}
+    '
 }
 
 # Function to collect data for a given namespace
 collect_data_namespace() {
    local ns=$1
 
-   object_types=("configmaps" "daemonsets" "deployments" "endpoints" "events" "ingress" "jobs" "networkpolicies" "otelinst" "rolebindings" "roles" "svc")
+    object_types=(
+      "configmaps"
+      "daemonsets"
+      "deployments"
+      "endpoints"
+      "events"
+      "ingress"
+      "jobs"
+      "networkpolicies"
+      "otelinst"
+      "rolebindings"
+      "roles"
+      "svc"
+      "ciliumendpoints"
+      "ciliumnetworkpolicies"
+      "ciliumclusterwidenetworkpolicies"
+      "ciliumidentities"
+      "ciliumnodes"
+      "policyendpoints"
+      "securitygrouppolicies"
+    )
+
    for type in "${object_types[@]}"; do
     stdbuf -oL echo "Collecting $type data for $ns namespace with $k8s_object_name_filter name filter"
      if [[ "$type" == "deployment" ||  "$type" == "daemonset" || "$type" == "configmaps" ]]; then
