@@ -13,6 +13,12 @@ on:
         description: 'Enable debug mode'
         required: false
         default: 'false'
+  workflow_run:
+    workflows:
+      - "Check for new chart dependency updates"
+      - "Check for new chart release"
+    types:
+      - completed
 
 jobs:
   check_and_update:
